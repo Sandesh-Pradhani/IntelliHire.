@@ -1,30 +1,64 @@
 const express = require('express')
 const cors = require('cors')
-//const mongoose = require('mongoose')
-//require('dotenv').config()
-const aiRoutes = require('./routes/aiRoutes')
 
-app.use('/api/ai', aiRoutes)
-app.use(express.json())
+/*
+WHY EXPRESS?
 
-app.use('/api/ai', aiRoutes)
+Backend framework for APIs.
+*/
 
 const app = express()
 
+/*
+WHY CORS?
+
+Frontend and backend run on different ports.
+
+5173 → React
+5000 → Backend
+
+Browser blocks requests without CORS.
+*/
+
 app.use(cors())
+
+/*
+WHY express.json()?
+
+Converts incoming JSON body
+into JavaScript object.
+*/
+
 app.use(express.json())
 
-/*mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log('MongoDB Connected'))
-.catch((err) => console.log(err))
+/*
+IMPORT ROUTES
 */
-app.use('/api/auth', require('./routes/authRoutes'))
-app.use('/api/resume', require('./routes/resumeRoutes'))
+
+const aiRoutes = require('./routes/aiRoutes')
+
+/*
+REGISTER ROUTES
+*/
+
+app.use('/api/ai', aiRoutes)
+
+/*
+TEST ROUTE
+*/
 
 app.get('/', (req, res) => {
-  res.send('IntelliHire Backend Running')
+
+    res.send('IntelliHire Backend Running')
+
 })
 
+/*
+START SERVER
+*/
+
 app.listen(5000, () => {
-  console.log('Server Running on Port 5000')
+
+    console.log('Server Running on Port 5000')
+
 })

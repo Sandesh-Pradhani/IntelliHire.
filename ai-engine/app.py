@@ -5,20 +5,24 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
+
     return "IntelliHire AI Engine Running"
 
+
 @app.route('/extract-skills', methods=['POST'])
-def skills():
+def extract():
 
     data = request.json
 
-    text = data['text']
+    text = data.get('text', '')
 
     skills = extract_skills(text)
 
     return jsonify({
-        'skills': skills
+        "skills": skills
     })
 
+
 if __name__ == '__main__':
+
     app.run(port=8000)
