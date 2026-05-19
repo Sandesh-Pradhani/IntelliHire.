@@ -1,42 +1,34 @@
-import { useState, useContext } from 'react'
+import { useState } from 'react'
 import axios from 'axios'
 
 import { useNavigate } from 'react-router-dom'
 
-import { AuthContext } from '../context/AuthContext'
-
-function Login() {
+function Register() {
 
     const navigate = useNavigate()
 
-    const { login } = useContext(AuthContext)
+    const [name, setName] = useState('')
 
     const [email, setEmail] = useState('')
 
     const [password, setPassword] = useState('')
 
-    const handleLogin = async () => {
+    const handleRegister = async () => {
 
         try {
 
-            const response = await axios.post(
+            await axios.post(
 
-                'http://localhost:5000/api/auth/login',
+                'http://localhost:5000/api/auth/register',
 
                 {
+                    name,
                     email,
                     password
                 }
             )
 
-            login(
-
-                response.data.user,
-
-                response.data.token
-            )
-
-            navigate('/dashboard')
+            navigate('/login')
 
         } catch (error) {
 
@@ -52,16 +44,27 @@ function Login() {
 
                 <h1 className="text-4xl font-bold text-slate-800">
 
-                    Welcome Back
+                    Create Account
 
                 </h1>
 
                 <p className="text-slate-500 mt-2">
 
-                    Login to IntelliHire AI
+                    Join IntelliHire AI
                 </p>
 
                 <div className="mt-8 space-y-5">
+
+                    <input
+
+                        type="text"
+
+                        placeholder="Full Name"
+
+                        onChange={(e) => setName(e.target.value)}
+
+                        className="w-full border rounded-xl px-4 py-3"
+                    />
 
                     <input
 
@@ -87,12 +90,12 @@ function Login() {
 
                     <button
 
-                        onClick={handleLogin}
+                        onClick={handleRegister}
 
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl"
 
                     >
-                        Login
+                        Register
                     </button>
 
                 </div>
@@ -103,4 +106,4 @@ function Login() {
     )
 }
 
-export default Login
+export default Register
