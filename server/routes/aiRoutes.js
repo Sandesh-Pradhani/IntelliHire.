@@ -1,39 +1,58 @@
 const express = require('express')
 const axios = require('axios')
+const upload = require('../middleware/uploadMiddleware')
 
 const router = express.Router()
 
-router.post('/extract-skills', async (req, res) => {
+/*
+UPLOAD ROUTE
 
-    try {
+upload.single('resume')
 
-        const { text } = req.body
+Means:
+accept ONE file
+with field name "resume"
+*/
 
-        /*
-        SEND TO PYTHON AI ENGINE
-        */
+router.post(
+    '/upload-resume',
 
-        const response = await axios.post(
-            'http://127.0.0.1:8000/extract-skills',
-            {
-                text: text
-            }
-        )
+    upload.single('resume'),
 
-        /*
-        RETURN RESPONSE TO FRONTEND
-        */
+    async (req, res) => {
 
-        res.json(response.data)
+        try {
 
-    } catch (error) {
+            /*
+            MULTER ADDS:
 
-        console.log(error)
+            req.file
+            */
 
-        res.status(500).json({
-            message: 'AI Extraction Failed'
-        })
+            const filePath = req.file.path
+
+            /*
+            SEND FILE PATH TO PYTHON AI
+            */
+
+            const response = await axios.post(
+                'http://127.0.0.1:8000/analyze-resume',
+                {
+                    filePath: filePath
+                }
+            )
+
+            res.json(response.data)
+
+        } catch (error) {
+
+            console.log(error)
+
+            res.status(500).json({
+                message: 'Resume Upload Failed'
+            })
+        }
     }
-})
+)
 
 module.exports = router
