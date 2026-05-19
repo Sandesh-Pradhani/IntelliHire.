@@ -1,24 +1,86 @@
-# Logs
-logs
-*.log
+# =========================
+# NODE MODULES
+# =========================
+
+node_modules/
+package-lock.json
+yarn.lock
+
+# =========================
+# ENV FILES
+# =========================
+
+.env
+.env.local
+.env.production
+
+# =========================
+# PYTHON
+# =========================
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+venv/
+env/
+
+# =========================
+# UPLOADS
+# =========================
+
+server/uploads/*
+
+# keep folder
+!server/uploads/.gitkeep
+
+# =========================
+# BUILD FILES
+# =========================
+
+dist/
+build/
+
+# =========================
+# VSCODE
+# =========================
+
+.vscode/
+
+# =========================
+# OS FILES
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+# LOG FILES
+# =========================
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# =========================
+# DATABASE
+# =========================
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.sqlite
+
+# =========================
+# CACHE
+# =========================
+
+.cache/
+coverage/
+
+# =========================
+# AI MODELS
+# =========================
+
+*.pt
+*.pth
+*.h5
+*.onnx
