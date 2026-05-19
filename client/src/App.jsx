@@ -3,66 +3,35 @@ import axios from 'axios'
 
 function App() {
 
-  /*
-  STATE
+  const [file, setFile] = useState(null)
 
-  React re-renders UI whenever state changes.
-  */
-
-  const [resumeText, setResumeText] = useState('')
   const [skills, setSkills] = useState([])
+
+  const [score, setScore] = useState(null)
+
   const [loading, setLoading] = useState(false)
-  const [atsScore, setAtsScore] = useState(null)
 
-  /*
-  WHY async?
-
-  API requests take time.
-  JavaScript continues execution asynchronously.
-  */
-
-  const extractSkills = async () => {
+  const uploadResume = async () => {
 
     try {
 
       setLoading(true)
 
-      /*
-      FRONTEND
-      ↓
-      EXPRESS BACKEND
-      */
+      const formData = new FormData()
+
+      formData.append('resume', file)
 
       const response = await axios.post(
-        'http://localhost:5000/api/ai/extract-skills',
-        {
-          text: resumeText
-        }
+
+        'http://localhost:5000/api/ai/upload-resume',
+
+        formData
+
       )
 
-      /*
-      response.data:
+      setSkills(response.data.skills)
 
-      {
-         skills: [...]
-      }
-      */
-
-      const extractedSkills = response.data.skills
-
-      setSkills(extractedSkills)
-
-      /*
-      SIMPLE ATS LOGIC
-
-      WHY?
-
-      Real systems score candidates.
-      */
-
-      const score = extractedSkills.length * 10
-
-      setAtsScore(score)
+      setScore(response.data.ats_score)
 
       setLoading(false)
 
@@ -76,134 +45,212 @@ function App() {
 
   return (
 
-    <div style={styles.container}>
+    <div className="min-h-screen bg-slate-50">
 
-      <h1 style={styles.heading}>
-        IntelliHire AI
-      </h1>
+      {/* HERO SECTION */}
 
-      <p style={styles.subHeading}>
-        AI Powered Recruitment System
-      </p>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16 px-6 shadow-lg">
 
-      <textarea
-        rows="12"
-        cols="70"
-        placeholder="Paste Resume Text Here..."
-        style={styles.textarea}
-        onChange={(e) => setResumeText(e.target.value)}
-      />
+        <div className="max-w-6xl mx-auto">
 
-      <br />
+          <h1 className="text-6xl font-bold tracking-tight">
 
-      <button
-        style={styles.button}
-        onClick={extractSkills}
-      >
-        Extract Skills
-      </button>
+            IntelliHire AI
 
-      {
-        loading && (
-          <h3>Analyzing Resume...</h3>
-        )
-      }
+          </h1>
 
-      <div style={styles.resultBox}>
+          <p className="mt-4 text-xl text-blue-100 max-w-2xl">
 
-        <h2>Extracted Skills</h2>
+            AI-powered intelligent recruitment platform for modern hiring workflows.
 
-        {
-          skills.length === 0
-          ? <p>No Skills Extracted</p>
-          : (
-              <ul>
-                {
-                  skills.map((skill, index) => (
-                    <li key={index}>
-                      {skill}
-                    </li>
-                  ))
-                }
-              </ul>
-            )
-        }
+          </p>
+
+        </div>
 
       </div>
 
-      {
-        atsScore !== null && (
-          <div style={styles.scoreBox}>
+      {/* MAIN CONTENT */}
 
-            <h2>
-              ATS Score: {atsScore}
-            </h2>
+      <div className="max-w-5xl mx-auto px-6 py-12">
+
+        {/* UPLOAD CARD */}
+
+        <div className="bg-white rounded-3xl shadow-xl p-10 border border-slate-200">
+
+          <h2 className="text-3xl font-semibold text-slate-800">
+
+            Resume Analysis
+
+          </h2>
+
+          <p className="text-slate-500 mt-2">
+
+            Upload candidate resume for AI skill extraction and ATS evaluation.
+
+          </p>
+
+          {/* FILE INPUT */}
+
+          <div className="mt-8 border-2 border-dashed border-blue-300 rounded-2xl p-10 bg-blue-50 text-center">
+
+            <input
+
+              type="file"
+
+              accept=".pdf"
+
+              onChange={(e) => setFile(e.target.files[0])}
+
+              className="block mx-auto text-slate-700"
+
+            />
+
+            <p className="mt-4 text-sm text-slate-500">
+
+              Supported Format: PDF Resume
+
+            </p>
 
           </div>
-        )
-      }
+
+          {/* BUTTON */}
+
+          <button
+
+            onClick={uploadResume}
+
+            className="mt-8 bg-blue-600 hover:bg-blue-700 transition-all duration-300 text-white px-8 py-4 rounded-xl text-lg font-medium shadow-lg"
+
+          >
+
+            Upload & Analyze Resume
+
+          </button>
+
+          {/* LOADING */}
+
+          {
+            loading && (
+
+              <div className="mt-8">
+
+                <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+
+                  <div className="bg-blue-600 h-3 animate-pulse w-3/4 rounded-full"></div>
+
+                </div>
+
+                <p className="mt-3 text-blue-700 font-medium">
+
+                  AI is analyzing candidate resume...
+
+                </p>
+
+              </div>
+            )
+          }
+
+        </div>
+
+        {/* RESULTS SECTION */}
+
+        <div className="grid md:grid-cols-2 gap-8 mt-10">
+
+          {/* SKILLS CARD */}
+
+          <div className="bg-white rounded-3xl shadow-lg p-8 border border-slate-200">
+
+            <h2 className="text-2xl font-semibold text-slate-800">
+
+              Extracted Skills
+
+            </h2>
+
+            <p className="text-slate-500 mt-2">
+
+              NLP identified candidate technologies and competencies.
+            </p>
+
+            <div className="flex flex-wrap gap-3 mt-6">
+
+              {
+                skills.length === 0
+
+                ? (
+                    <p className="text-slate-400">
+
+                      No skills extracted yet
+
+                    </p>
+                  )
+
+                : skills.map((skill, index) => (
+
+                    <div
+
+                      key={index}
+
+                      className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-medium"
+
+                    >
+
+                      {skill}
+
+                    </div>
+                  ))
+              }
+
+            </div>
+
+          </div>
+
+          {/* ATS CARD */}
+
+          <div className="bg-white rounded-3xl shadow-lg p-8 border border-slate-200">
+
+            <h2 className="text-2xl font-semibold text-slate-800">
+
+              ATS Evaluation
+
+            </h2>
+
+            <p className="text-slate-500 mt-2">
+
+              AI-generated resume evaluation score.
+            </p>
+
+            <div className="mt-10 flex items-center justify-center">
+
+              <div className="w-52 h-52 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex flex-col items-center justify-center shadow-2xl">
+
+                <h1 className="text-6xl font-bold text-white">
+
+                  {
+                    score !== null
+                    ? score
+                    : '--'
+                  }
+
+                </h1>
+
+                <p className="text-blue-100 mt-2">
+
+                  ATS Score
+
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
 
     </div>
   )
-}
-
-/*
-WHY styles object?
-
-Inline styling keeps V1 simple.
-
-Later:
-Tailwind CSS
-*/
-
-const styles = {
-
-  container: {
-    padding: '40px',
-    fontFamily: 'Arial'
-  },
-
-  heading: {
-    fontSize: '50px',
-    color: '#2563eb'
-  },
-
-  subHeading: {
-    fontSize: '20px',
-    marginBottom: '20px'
-  },
-
-  textarea: {
-    padding: '15px',
-    fontSize: '16px',
-    borderRadius: '10px',
-    border: '1px solid gray'
-  },
-
-  button: {
-    marginTop: '20px',
-    padding: '12px 25px',
-    backgroundColor: '#2563eb',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '16px'
-  },
-
-  resultBox: {
-    marginTop: '30px',
-    padding: '20px',
-    border: '1px solid #ddd',
-    borderRadius: '10px'
-  },
-
-  scoreBox: {
-    marginTop: '20px',
-    padding: '20px',
-    backgroundColor: '#eff6ff',
-    borderRadius: '10px'
-  }
 }
 
 export default App
