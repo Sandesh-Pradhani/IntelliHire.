@@ -36,7 +36,7 @@ router.post(
             */
 
             const response = await axios.post(
-                'http://127.0.0.1:8000/analyze-resume',
+                '${process.env.AI_ENGINE_URL}/analyze-resume',
                 {
                     filePath: filePath
                 }
