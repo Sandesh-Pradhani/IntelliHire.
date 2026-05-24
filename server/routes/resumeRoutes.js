@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
-router.post('/upload', upload.single('resume'), async (req, res) => {
+router.post('/api/resumes/upload', upload.single('resume'), async (req, res) => {
   res.json({
     message: 'Resume Uploaded Successfully',
     file: req.file
