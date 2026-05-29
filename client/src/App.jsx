@@ -8,6 +8,10 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import ResumeUpload from './pages/ResumeUpload'
+import ResumeHistory from './pages/ResumeHistory'
+import Jobs from './pages/Jobs'
+import Rankings from './pages/Rankings'
+import Feedback from './pages/Feedback'
 
 function App() {
 
@@ -61,6 +65,62 @@ function App() {
           }
         />
 
+      <Route
+
+        path="/resume-history"
+
+        element={
+
+          <ProtectedRoute>
+
+            <ResumeHistory />
+
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+
+        path="/jobs"
+
+        element={
+
+          <ProtectedRoute>
+
+            <Jobs />
+
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+
+        path="/rankings"
+
+        element={
+
+          <ProtectedRoute>
+
+            <Rankings />
+
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+
+        path="/feedback"
+
+        element={
+
+          <ProtectedRoute>
+
+            <Feedback />
+
+          </ProtectedRoute>
+        }
+      />
+      
       </Routes>
 
     </BrowserRouter>
