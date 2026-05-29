@@ -2,16 +2,11 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 
 import Layout from '../components/Layout'
+import FeedbackCard from '../components/FeedbackCard'
 
 function Feedback() {
 
     const [feedbacks, setFeedbacks] = useState([])
-
-    useEffect(() => {
-
-        fetchFeedback()
-
-    }, [])
 
     const fetchFeedback = async () => {
 
@@ -39,6 +34,12 @@ function Feedback() {
         }
     }
 
+    useEffect(() => {
+
+        fetchFeedback()
+
+    }, [])
+
     return (
 
         <Layout>
@@ -47,6 +48,8 @@ function Feedback() {
 
                 Feedback
             </h1>
+
+            <FeedbackCard />
 
             <div className="mt-10 space-y-6">
 

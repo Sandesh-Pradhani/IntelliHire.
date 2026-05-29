@@ -13,12 +13,6 @@ function Jobs() {
 
     const [jobs, setJobs] = useState([])
 
-    useEffect(() => {
-
-        fetchJobs()
-
-    }, [])
-
     const fetchJobs = async () => {
 
         try {
@@ -35,6 +29,12 @@ function Jobs() {
             console.log(error)
         }
     }
+
+    useEffect(() => {
+
+        fetchJobs()
+
+    }, [])
 
     const createJob = async () => {
 

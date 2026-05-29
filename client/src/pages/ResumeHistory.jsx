@@ -7,12 +7,6 @@ function ResumeHistory() {
 
     const [resumes, setResumes] = useState([])
 
-    useEffect(() => {
-
-        fetchHistory()
-
-    }, [])
-
     const fetchHistory = async () => {
 
         try {
@@ -38,6 +32,12 @@ function ResumeHistory() {
             console.log(error)
         }
     }
+
+    useEffect(() => {
+
+        fetchHistory()
+
+    }, [])
 
     return (
 
