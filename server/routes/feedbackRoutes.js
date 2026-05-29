@@ -6,6 +6,34 @@ const authMiddleware = require('../middleware/authMiddleware')
 
 const router = express.Router()
 
+router.get(
+
+    '/',
+
+    authMiddleware,
+
+    async (req, res) => {
+
+        try {
+
+            const feedbacks = await Feedback.find({ user: req.user.id })
+                .sort({ createdAt: -1 })
+                .populate('user', 'name email')
+
+            res.json(feedbacks)
+
+        } catch (error) {
+
+            console.log(error)
+
+            res.status(500).json({
+
+                message: 'Failed to fetch feedback'
+            })
+        }
+    }
+)
+
 router.post(
 
     '/submit',

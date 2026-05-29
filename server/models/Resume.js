@@ -11,6 +11,13 @@ const resumeSchema = new mongoose.Schema({
 
     fileName: String,
 
+    extractedSkills: [String],
+
+    atsScore: {
+        type: Number,
+        default: 0
+    },
+
     uploadedAt: {
         type: Date,
         default: Date.now

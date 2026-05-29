@@ -52,11 +52,17 @@ const ResumeUpload = () => {
     formData.append('resume', file)
 
     try {
-      const res = await axios.post(`${API_BASE}/api/resumes/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const token = localStorage.getItem('token')
+
+      const res = await axios.post(`${API_BASE}/api/ai/upload-resume`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`
+        },
       })
 
-      setSkills(res.data.extractedSkills || [])
+      const data = res.data.resume || res.data
+      setSkills(data.extractedSkills || data.skills || [])
       setFile(null)
       setSuccessMessage('Resume uploaded successfully!')
 

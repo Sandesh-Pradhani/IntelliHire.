@@ -7,6 +7,8 @@ const connectDB = require('./config/db')
 const authRoutes = require('./routes/authRoutes')
 const aiRoutes = require('./routes/aiRoutes')
 const resumeRoutes = require('./routes/resumeRoutes')
+const jobRoutes = require('./routes/jobRoutes')
+const feedbackRoutes = require('./routes/feedbackRoutes')
 
 dotenv.config()
 
@@ -32,6 +34,10 @@ app.use('/api/ai', aiRoutes)
 
 app.use('/api/resumes', resumeRoutes)
 
+app.use('/api/jobs', jobRoutes)
+
+app.use('/api/feedback', feedbackRoutes)
+
 app.get('/', (req, res) => {
 
     res.send('IntelliHire Backend Running')
@@ -41,7 +47,3 @@ app.listen(5000, () => {
 
     console.log('Server Running on Port 5000')
 })
-
-const feedbackRoutes = require('./routes/feedbackRoutes')
-
-app.use('/api/feedback', feedbackRoutes)
