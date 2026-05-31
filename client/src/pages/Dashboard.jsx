@@ -2,6 +2,9 @@ import { useContext, useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthContext } from '../context/AuthContext'
 import Layout from '../components/Layout'
+import StatCard from '../components/ui/StatCard'
+import SectionCard from '../components/ui/SectionCard'
+import { StatCardSkeleton, ChartSkeleton, ListSkeleton } from '../components/ui/Skeleton'
 import axios from 'axios'
 import {
   FileText,
@@ -20,7 +23,7 @@ import {
   ArrowUpRight
 } from 'lucide-react'
 
-// Rich, recruiter-themed mockup data for fallbacks
+// Fallback data for demonstration when API is unavailable
 const MOCK_RESUMES = [
   { filename: 'CV_Senior_React_Developer.pdf', atsScore: 92, createdAt: '2026-05-28T14:32:00Z', extractedSkills: ['React', 'Node.js', 'TypeScript', 'MongoDB'] },
   { filename: 'Resume_Technical_Product_Manager.docx', atsScore: 78, createdAt: '2026-05-27T09:15:00Z', extractedSkills: ['Product Strategy', 'Agile', 'Jira', 'SQL'] },
@@ -51,6 +54,7 @@ function Dashboard() {
   const [jobs, setJobs] = useState([])
   const [feedbacks, setFeedbacks] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Format current date
   const currentDate = useMemo(() => {
@@ -86,8 +90,14 @@ function Dashboard() {
         if (historyRes.status === 'fulfilled') setResumes(historyRes.value.data || [])
         if (jobsRes.status === 'fulfilled') setJobs(jobsRes.value.data || [])
         if (feedbackRes.status === 'fulfilled') setFeedbacks(feedbackRes.value.data || [])
+
+        // Set error only if all requests failed
+        if (historyRes.status === 'rejected' && jobsRes.status === 'rejected' && feedbackRes.status === 'rejected') {
+          setError('Unable to connect to server. Showing sample data.')
+        }
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
+        setError('Unable to load dashboard data.')
       } finally {
         setLoading(false)
       }
@@ -96,16 +106,14 @@ function Dashboard() {
     fetchDashboardData()
   }, [])
 
-  // Dynamic calculations or fallback mockups
+  // Compute derived data (only when real data changes)
   const activeResumes = resumes.length > 0 ? resumes : MOCK_RESUMES
   const activeJobs = jobs.length > 0 ? jobs : MOCK_JOBS
   const activeFeedbacks = feedbacks.length > 0 ? feedbacks : MOCK_FEEDBACKS
   const activeCandidates = MOCK_CANDIDATES
 
-  // 1. Total Resumes Analyzed
   const totalResumesCount = activeResumes.length
 
-  // 2. Average ATS Score
   const avgAtsScore = useMemo(() => {
     if (activeResumes.length === 0) return 0
     const total = activeResumes.reduce((acc, curr) => {
@@ -117,13 +125,11 @@ function Dashboard() {
     return Math.round(total / activeResumes.length)
   }, [activeResumes])
 
-  // 3. Candidates Ranked
   const candidatesRankedCount = activeCandidates.length + (resumes.length > 0 ? resumes.filter(r => r.atsScore >= 75).length : 2)
 
-  // 4. Active Jobs
   const activeJobsCount = activeJobs.length
 
-  // Skills extractor for bar charts
+  // Top skills extraction
   const topSkills = useMemo(() => {
     const counts = {}
     activeResumes.forEach(r => {
@@ -152,19 +158,17 @@ function Dashboard() {
     return sorted
   }, [activeResumes])
 
-  // Custom Chart Coordinates calculation
-  // Plotting last 6 ATS scores
+  // Chart data for ATS score trend
   const chartPoints = useMemo(() => {
     const scores = activeResumes.slice(0, 6).map(r => r.atsScore).reverse()
     while (scores.length < 6) {
-      scores.unshift(70 + Math.floor(Math.random() * 20)) // Backfill default scores
+      scores.unshift(70 + Math.floor(Math.random() * 20))
     }
     return scores
   }, [activeResumes])
 
   const chartSVGPath = useMemo(() => {
     const xCoords = [40, 120, 200, 280, 360, 440]
-    // Map score 0-100 to SVG height 160-40 (inverted)
     const points = chartPoints.map((score, idx) => {
       const x = xCoords[idx]
       const y = 160 - (score * 1.2)
@@ -185,7 +189,6 @@ function Dashboard() {
       <main className="space-y-8 animate-fade-in pb-12">
         {/* HERO SECTION */}
         <section className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 text-white shadow-xl relative overflow-hidden">
-          {/* Decorative gradients */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
           <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -mb-16 pointer-events-none" />
 
@@ -204,7 +207,6 @@ function Dashboard() {
               </p>
             </div>
 
-            {/* Quick Actions Panel */}
             <div className="flex flex-wrap gap-3">
               <Link
                 to="/resume-upload"
@@ -224,253 +226,190 @@ function Dashboard() {
           </div>
         </section>
 
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 text-sm font-medium flex items-center gap-2">
+            <span className="text-amber-500 text-lg">&#9888;</span>
+            {error}
+          </div>
+        )}
+
         {/* KPI CARDS SECTION */}
-        <section
-          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
-          aria-label="Key Performance Indicators"
-        >
-          {/* Card 1: Resumes Analyzed */}
-          <article className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
-            <div className="flex justify-between items-start">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Resumes Analyzed
-                </p>
-                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {totalResumesCount}
-                </h3>
-              </div>
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:scale-105 transition-transform duration-300">
-                <FileText className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-600 font-medium bg-emerald-50 w-fit px-2.5 py-1 rounded-full">
-              <span>+18%</span>
-              <span className="text-slate-400 font-normal">from last week</span>
-            </div>
-          </article>
-
-          {/* Card 2: Average ATS Score */}
-          <article className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
-            <div className="flex justify-between items-start">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Avg ATS Score
-                </p>
-                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {avgAtsScore}%
-                </h3>
-              </div>
-              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:scale-105 transition-transform duration-300">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-600 font-medium bg-emerald-50 w-fit px-2.5 py-1 rounded-full">
-              <span>+2.4%</span>
-              <span className="text-slate-400 font-normal">vs last month</span>
-            </div>
-          </article>
-
-          {/* Card 3: Candidates Ranked */}
-          <article className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
-            <div className="flex justify-between items-start">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Candidates Ranked
-                </p>
-                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {candidatesRankedCount}
-                </h3>
-              </div>
-              <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl group-hover:scale-105 transition-transform duration-300">
-                <Award className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-1.5 text-xs text-violet-600 font-medium bg-violet-50 w-fit px-2.5 py-1 rounded-full">
-              <span>Stable</span>
-              <span className="text-slate-400 font-normal">recruitment active</span>
-            </div>
-          </article>
-
-          {/* Card 4: Active Job Roles */}
-          <article className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
-            <div className="flex justify-between items-start">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Active Jobs
-                </p>
-                <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {activeJobsCount}
-                </h3>
-              </div>
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:scale-105 transition-transform duration-300">
-                <Briefcase className="h-5 w-5" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-1.5 text-xs text-amber-600 font-medium bg-amber-50 w-fit px-2.5 py-1 rounded-full">
-              <span>{activeJobsCount > 1 ? `${activeJobsCount - 1} high-priority` : 'All roles active'}</span>
-            </div>
-          </article>
+        <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6" aria-label="Key Performance Indicators">
+          {loading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatCard
+                label="Resumes Analyzed"
+                value={totalResumesCount}
+                icon={FileText}
+                iconColor="blue"
+                trend="+18%"
+                trendLabel="from last week"
+                trendColor="emerald"
+              />
+              <StatCard
+                label="Avg ATS Score"
+                value={`${avgAtsScore}%`}
+                icon={TrendingUp}
+                iconColor="indigo"
+                trend="+2.4%"
+                trendLabel="vs last month"
+                trendColor="emerald"
+              />
+              <StatCard
+                label="Candidates Ranked"
+                value={candidatesRankedCount}
+                icon={Award}
+                iconColor="violet"
+                trend="Stable"
+                trendLabel="recruitment active"
+                trendColor="violet"
+              />
+              <StatCard
+                label="Active Jobs"
+                value={activeJobsCount}
+                icon={Briefcase}
+                iconColor="emerald"
+                trend={activeJobsCount > 1 ? `${activeJobsCount - 1} high-priority` : 'All roles active'}
+                trendColor="amber"
+              />
+            </>
+          )}
         </section>
 
-        {/* ANALYTICS SECTION (CHARTS) */}
+        {/* ANALYTICS SECTION */}
         <section className="grid lg:grid-cols-2 gap-8">
-          {/* Chart A: ATS Score Trend */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">ATS Score Trend</h3>
-                  <p className="text-xs text-slate-400">Chronological analysis of recently parsed resumes</p>
-                </div>
-                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
-                  L6 Resumes
-                </span>
-              </div>
-            </div>
+          {/* ATS Score Trend */}
+          <SectionCard
+            title="ATS Score Trend"
+            subtitle="Chronological analysis of recently parsed resumes"
+            action={
+              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+                L6 Resumes
+              </span>
+            }
+          >
+            {loading ? (
+              <div className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
+            ) : (
+              <div className="relative h-48 w-full mt-4 flex items-end">
+                <svg viewBox="0 0 480 180" className="w-full h-full" style={{ overflow: 'visible' }}>
+                  <defs>
+                    <linearGradient id="chartAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.00" />
+                    </linearGradient>
+                  </defs>
 
-            {/* Custom SVG Line Chart */}
-            <div className="relative h-48 w-full mt-4 flex items-end">
-              <svg viewBox="0 0 480 180" className="w-full h-full" style={{ overflow: 'visible' }}>
-                <defs>
-                  <linearGradient id="chartAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.00" />
-                  </linearGradient>
-                </defs>
+                  <line x1="30" y1="160" x2="450" y2="160" stroke="#f1f5f9" strokeWidth="1.5" />
+                  <line x1="30" y1="112" x2="450" y2="112" stroke="#f1f5f9" strokeWidth="1.5" />
+                  <line x1="30" y1="64" x2="450" y2="64" stroke="#f1f5f9" strokeWidth="1.5" />
+                  <line x1="30" y1="16" x2="450" y2="16" stroke="#f1f5f9" strokeWidth="1.5" />
 
-                {/* Horizontal Grid lines */}
-                <line x1="30" y1="160" x2="450" y2="160" stroke="#f1f5f9" strokeWidth="1.5" />
-                <line x1="30" y1="112" x2="450" y2="112" stroke="#f1f5f9" strokeWidth="1.5" />
-                <line x1="30" y1="64" x2="450" y2="64" stroke="#f1f5f9" strokeWidth="1.5" />
-                <line x1="30" y1="16" x2="450" y2="16" stroke="#f1f5f9" strokeWidth="1.5" />
+                  <text x="15" y="163" fill="#94a3b8" fontSize="10" textAnchor="end">0</text>
+                  <text x="15" y="115" fill="#94a3b8" fontSize="10" textAnchor="end">40</text>
+                  <text x="15" y="67" fill="#94a3b8" fontSize="10" textAnchor="end">80</text>
+                  <text x="15" y="19" fill="#94a3b8" fontSize="10" textAnchor="end">100</text>
 
-                {/* Grid Labels */}
-                <text x="15" y="163" fill="#94a3b8" fontSize="10" textAnchor="end">0</text>
-                <text x="15" y="115" fill="#94a3b8" fontSize="10" textAnchor="end">40</text>
-                <text x="15" y="67" fill="#94a3b8" fontSize="10" textAnchor="end">80</text>
-                <text x="15" y="19" fill="#94a3b8" fontSize="10" textAnchor="end">100</text>
+                  <path d={chartSVGPath.areaPath} fill="url(#chartAreaGradient)" />
+                  <path
+                    d={chartSVGPath.linePath}
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
 
-                {/* Area under the line */}
-                <path d={chartSVGPath.areaPath} fill="url(#chartAreaGradient)" />
+                  {chartSVGPath.points.map((pt, idx) => (
+                    <g key={idx} className="group/dot cursor-pointer">
+                      <circle cx={pt.x} cy={pt.y} r="7" fill="#ffffff" stroke="#3b82f6" strokeWidth="3" className="transition-all duration-200 hover:r-8 hover:fill-blue-600" />
+                      <circle cx={pt.x} cy={pt.y} r="12" fill="#3b82f6" fillOpacity="0" className="transition-all duration-200 hover:fill-opacity-10" />
+                      <text x={pt.x} y={pt.y - 12} fill="#1e293b" fontSize="10" fontWeight="bold" textAnchor="middle"
+                        className="opacity-0 group-hover/dot:opacity-100 transition-opacity duration-200">
+                        {chartPoints[idx]}
+                      </text>
+                    </g>
+                  ))}
 
-                {/* Main line */}
-                <path
-                  d={chartSVGPath.linePath}
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                {/* Data Points */}
-                {chartSVGPath.points.map((pt, idx) => (
-                  <g key={idx} className="group/dot cursor-pointer">
-                    <circle
-                      cx={pt.x}
-                      cy={pt.y}
-                      r="7"
-                      fill="#ffffff"
-                      stroke="#3b82f6"
-                      strokeWidth="3"
-                      className="transition-all duration-200 hover:r-8 hover:fill-blue-600"
-                    />
-                    {/* Glowing outer circle on hover */}
-                    <circle
-                      cx={pt.x}
-                      cy={pt.y}
-                      r="12"
-                      fill="#3b82f6"
-                      fillOpacity="0"
-                      className="transition-all duration-200 hover:fill-opacity-10"
-                    />
-                    {/* Score display tooltip */}
-                    <text
-                      x={pt.x}
-                      y={pt.y - 12}
-                      fill="#1e293b"
-                      fontSize="10"
-                      fontWeight="bold"
-                      textAnchor="middle"
-                      className="opacity-0 group-hover/dot:opacity-100 transition-opacity bg-slate-900 duration-200 text-xs"
-                    >
-                      {chartPoints[idx]}
+                  {['R6', 'R5', 'R4', 'R3', 'R2', 'R1'].map((lbl, idx) => (
+                    <text key={lbl} x={chartSVGPath.points[idx].x} y="178" fill="#64748b" fontSize="10.5" fontWeight="500" textAnchor="middle">
+                      {lbl}
                     </text>
-                  </g>
-                ))}
-
-                {/* X-axis labels */}
-                {['R6', 'R5', 'R4', 'R3', 'R2', 'R1'].map((lbl, idx) => (
-                  <text
-                    key={lbl}
-                    x={chartSVGPath.points[idx].x}
-                    y="178"
-                    fill="#64748b"
-                    fontSize="10.5"
-                    fontWeight="500"
-                    textAnchor="middle"
-                  >
-                    {lbl}
-                  </text>
-                ))}
-              </svg>
-            </div>
-          </div>
-
-          {/* Chart B: Skill Frequency Distribution */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">Candidate Skills Distribution</h3>
-                  <p className="text-xs text-slate-400">Most frequent technologies extracted from applicant pool</p>
-                </div>
-                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                  Top Skills
-                </span>
+                  ))}
+                </svg>
               </div>
-            </div>
+            )}
+          </SectionCard>
 
-            <div className="space-y-4.5 mt-4">
-              {topSkills.map((skill, index) => {
-                // Calculate percentage out of maximum count for aesthetic bar ratios
-                const maxCount = Math.max(...topSkills.map(s => s.count)) || 1
-                const percent = (skill.count / maxCount) * 100
-
-                // Diverse colors
-                const colors = [
-                  'from-blue-500 to-indigo-600',
-                  'from-emerald-500 to-teal-600',
-                  'from-violet-500 to-purple-600',
-                  'from-sky-400 to-blue-500',
-                  'from-amber-400 to-orange-500'
-                ]
-
-                return (
-                  <div key={skill.name} className="space-y-1.5">
-                    <div className="flex justify-between items-center text-sm font-medium">
-                      <span className="text-slate-700 font-semibold">{skill.name}</span>
-                      <span className="text-slate-500 text-xs bg-slate-50 px-2 py-0.5 rounded-md font-semibold border border-slate-100">
-                        {skill.count} {skill.count === 1 ? 'applicant' : 'applicants'}
-                      </span>
+          {/* Skills Distribution */}
+          <SectionCard
+            title="Candidate Skills Distribution"
+            subtitle="Most frequent technologies extracted from applicant pool"
+            action={
+              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                Top Skills
+              </span>
+            }
+          >
+            {loading ? (
+              <div className="space-y-4 animate-pulse">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex justify-between">
+                      <div className="h-4 bg-slate-200 rounded w-24" />
+                      <div className="h-4 bg-slate-200 rounded w-16" />
                     </div>
-                    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                      <div
-                        className={`bg-gradient-to-r ${colors[index % colors.length]} h-full rounded-full transition-all duration-1000 ease-out`}
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
+                    <div className="h-3 bg-slate-100 rounded-full" />
                   </div>
-                )
-              })}
-            </div>
-          </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4.5 mt-4">
+                {topSkills.map((skill, index) => {
+                  const maxCount = Math.max(...topSkills.map(s => s.count)) || 1
+                  const percent = (skill.count / maxCount) * 100
+
+                  const colors = [
+                    'from-blue-500 to-indigo-600',
+                    'from-emerald-500 to-teal-600',
+                    'from-violet-500 to-purple-600',
+                    'from-sky-400 to-blue-500',
+                    'from-amber-400 to-orange-500'
+                  ]
+
+                  return (
+                    <div key={skill.name} className="space-y-1.5">
+                      <div className="flex justify-between items-center text-sm font-medium">
+                        <span className="text-slate-700 font-semibold">{skill.name}</span>
+                        <span className="text-slate-500 text-xs bg-slate-50 px-2 py-0.5 rounded-md font-semibold border border-slate-100">
+                          {skill.count} {skill.count === 1 ? 'applicant' : 'applicants'}
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                        <div
+                          className={`bg-gradient-to-r ${colors[index % colors.length]} h-full rounded-full transition-all duration-1000 ease-out`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </SectionCard>
         </section>
 
-        {/* DYNAMIC TWO-COLUMN ACTIVITY & AI INSIGHTS GRID */}
+        {/* ACTIVITY & AI INSIGHTS GRID */}
         <section className="grid lg:grid-cols-12 gap-8">
-          {/* Left Column: Recent Activities (7 Cols on large screen) */}
+          {/* Left Column: Recent Activities */}
           <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -486,80 +425,83 @@ function Dashboard() {
               </Link>
             </div>
 
-            <div className="space-y-6">
-              {/* Resumes uploads */}
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                  Recent Resume Evaluations
-                </h4>
-                <div className="divide-y divide-slate-100">
-                  {activeResumes.slice(0, 3).map((res, index) => {
-                    const score = typeof res.atsScore === 'number' ? res.atsScore : parseInt(res.atsScore) || 0
-                    const scoreColor = score >= 85 ? 'text-emerald-600 bg-emerald-50' : score >= 70 ? 'text-blue-600 bg-blue-50' : 'text-slate-500 bg-slate-100'
+            {loading ? (
+              <ListSkeleton rows={3} />
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                    Recent Resume Evaluations
+                  </h4>
+                  <div className="divide-y divide-slate-100">
+                    {activeResumes.slice(0, 3).length === 0 ? (
+                      <p className="text-sm text-slate-400 py-4 text-center">No resumes evaluated yet.</p>
+                    ) : (
+                      activeResumes.slice(0, 3).map((res, index) => {
+                        const score = typeof res.atsScore === 'number' ? res.atsScore : parseInt(res.atsScore) || 0
+                        const scoreColor = score >= 85 ? 'text-emerald-600 bg-emerald-50' : score >= 70 ? 'text-blue-600 bg-blue-50' : 'text-slate-500 bg-slate-100'
 
-                    return (
-                      <div key={index} className="py-3 flex justify-between items-center first:pt-0 last:pb-0 hover:bg-slate-50/50 px-2 rounded-xl transition-all">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="p-2.5 bg-blue-50 text-blue-500 rounded-xl">
-                            <FileText className="h-4.5 w-4.5" />
+                        return (
+                          <div key={index} className="py-3 flex justify-between items-center first:pt-0 last:pb-0 hover:bg-slate-50/50 px-2 rounded-xl transition-all">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              <div className="p-2.5 bg-blue-50 text-blue-500 rounded-xl">
+                                <FileText className="h-4.5 w-4.5" />
+                              </div>
+                              <div className="overflow-hidden">
+                                <p className="text-sm font-semibold text-slate-800 truncate">
+                                  {res.filename}
+                                </p>
+                                <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
+                                  <span>Candidate Application</span>
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${scoreColor}`}>
+                                {score} ATS
+                              </span>
+                              <Link to="/resume-history" className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+                                <ChevronRight className="h-4 w-4" />
+                              </Link>
+                            </div>
                           </div>
-                          <div className="overflow-hidden">
-                            <p className="text-sm font-semibold text-slate-800 truncate">
-                              {res.filename}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
-                              <span>Candidate Application</span>
-                            </p>
+                        )
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                    Ranked Candidates
+                  </h4>
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    {activeCandidates.map((c, index) => (
+                      <div key={index} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900 truncate">{c.name}</p>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {c.skills.slice(0, 2).map(s => (
+                              <span key={s} className="text-[10px] font-semibold bg-white border border-slate-200/80 text-slate-500 px-1.5 py-0.5 rounded-md">
+                                {s}
+                              </span>
+                            ))}
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${scoreColor}`}>
-                            {score} ATS
-                          </span>
-                          <Link
-                            to="/resume-history"
-                            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Link>
+                        <div className="mt-3 flex justify-between items-center border-t border-slate-200/60 pt-2">
+                          <span className="text-[10px] font-medium text-slate-400">Match Rank</span>
+                          <span className="text-xs font-extrabold text-blue-600">{c.score}%</span>
                         </div>
                       </div>
-                    )
-                  })}
+                    ))}
+                  </div>
                 </div>
               </div>
-
-              {/* Active candidate rankings */}
-              <div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                  Ranked Candidates
-                </h4>
-                <div className="grid sm:grid-cols-3 gap-4">
-                  {activeCandidates.map((c, index) => (
-                    <div key={index} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col justify-between">
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 truncate">{c.name}</p>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
-                          {c.skills.slice(0, 2).map(s => (
-                            <span key={s} className="text-[10px] font-semibold bg-white border border-slate-200/80 text-slate-500 px-1.5 py-0.5 rounded-md">
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="mt-3 flex justify-between items-center border-t border-slate-200/60 pt-2">
-                        <span className="text-[10px] font-medium text-slate-400">Match Rank</span>
-                        <span className="text-xs font-extrabold text-blue-600">{c.score}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Right Column: AI Insights & Feedback (5 Cols on large screen) */}
+          {/* Right Column: AI Insights & Feedback */}
           <div className="lg:col-span-5 flex flex-col gap-8">
             {/* AI Insights Panel */}
             <div className="bg-gradient-to-br from-indigo-900 to-blue-950 p-6 rounded-3xl text-white shadow-lg space-y-4.5 relative overflow-hidden">
@@ -591,37 +533,38 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* Recent Recruiter Feedbacks */}
+            {/* Recent Feedbacks */}
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold text-slate-900">User Feedbacks</h3>
                   <p className="text-[11px] text-slate-400">Recent experience reports and platform ratings</p>
                 </div>
-                <Link
-                  to="/feedback"
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5 hover:underline"
-                >
+                <Link to="/feedback" className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-0.5 hover:underline">
                   Feedback Page
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
 
               <div className="space-y-3">
-                {activeFeedbacks.slice(0, 2).map((fb, index) => (
-                  <div key={index} className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl space-y-1.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-slate-700">Platform Evaluator</span>
-                      <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">
-                        <ThumbsUp className="h-3 w-3" />
-                        <span>{fb.rating || 5}/5</span>
+                {activeFeedbacks.slice(0, 2).length === 0 ? (
+                  <p className="text-sm text-slate-400 py-4 text-center">No feedback available yet.</p>
+                ) : (
+                  activeFeedbacks.slice(0, 2).map((fb, index) => (
+                    <div key={index} className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl space-y-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-slate-700">Platform Evaluator</span>
+                        <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">
+                          <ThumbsUp className="h-3 w-3" />
+                          <span>{fb.rating || 5}/5</span>
+                        </div>
                       </div>
+                      <p className="text-xs text-slate-500 italic font-medium leading-relaxed truncate-2-lines">
+                        &ldquo;{fb.message || 'No description added.'}&rdquo;
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-500 italic font-medium leading-relaxed truncate-2-lines">
-                      "{fb.message || 'No description added.'}"
-                    </p>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
