@@ -9,6 +9,7 @@ const aiRoutes = require('./routes/aiRoutes')
 const resumeRoutes = require('./routes/resumeRoutes')
 const jobRoutes = require('./routes/jobRoutes')
 const feedbackRoutes = require('./routes/feedbackRoutes')
+const recruiterRoutes = require('./routes/recruiterRoutes')
 
 dotenv.config()
 
@@ -37,6 +38,7 @@ app.use('/api/resumes', resumeRoutes)
 app.use('/api/jobs', jobRoutes)
 
 app.use('/api/feedback', feedbackRoutes)
+app.use('/api/recruiter', recruiterRoutes)
 
 app.get('/', (req, res) => {
 

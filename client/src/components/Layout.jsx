@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   User,
-  LogOut
+  LogOut,
+  Sparkles
 } from 'lucide-react'
 
 function Layout({ children }) {
@@ -49,6 +50,11 @@ function Layout({ children }) {
       path: '/feedback',
       label: 'Feedback',
       icon: MessageSquare
+    },
+    {
+      path: '/job-match',
+      label: 'AI Job Matching',
+      icon: Sparkles
     }
   ]
 
