@@ -12,6 +12,7 @@ import ResumeHistory from './pages/ResumeHistory'
 import Jobs from './pages/Jobs'
 import Rankings from './pages/Rankings'
 import Feedback from './pages/Feedback'
+import JobMatch from './pages/JobMatch'
 
 function App() {
 
@@ -119,6 +120,16 @@ function App() {
 
           </ProtectedRoute>
         }
+      />
+      <Route
+   path="/job-match"
+   element={
+      <ProtectedRoute>
+
+         <JobMatch />
+         
+      </ProtectedRoute>
+           }
       />
       
       </Routes>

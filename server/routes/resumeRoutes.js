@@ -1,76 +1,40 @@
 const express = require('express')
-const multer = require('multer')
+
+const Resume = require('../models/Resume')
+const authMiddleware = require('../middleware/authMiddleware')
 
 const router = express.Router()
-const fs = require('fs')
-const pdf = require('pdf-parse')
-const skillsList = require('../utils/skills')
 
-/*
-MULTER STORAGE
-*/
+router.get(
 
-const storage = multer.diskStorage({
+    '/latest',
 
-    destination: (req, file, cb) => {
-
-        cb(null, 'uploads/')
-    },
-
-    filename: (req, file, cb) => {
-
-        cb(
-
-            null,
-
-            Date.now() + '-' + file.originalname
-        )
-    }
-})
-
-const upload = multer({ storage })
-
-/*
-UPLOAD ROUTE
-*/
-
-router.post(
-
-    '/upload',
-
-    upload.single('resume'),
+    authMiddleware,
 
     async (req, res) => {
 
         try {
 
-            /*
-            READ PDF
-            */
+            const resume = await Resume.findOne({
 
-            const dataBuffer = fs.readFileSync(req.file.path)
+                userId: req.user._id || req.user.id
 
-            const pdfData = await pdf(dataBuffer)
-
-            const text = pdfData.text.toLowerCase()
-
-            /*
-            SKILL MATCHING
-            */
-
-            const extractedSkills = skillsList.filter((skill) =>
-
-                text.includes(skill)
-            )
-
-            console.log(extractedSkills)
-
-            res.json({
-
-                message: 'Resume Uploaded',
-
-                extractedSkills
             })
+
+            .sort({
+
+                uploadedAt: -1
+            })
+
+            if (!resume) {
+
+                return res.status(404).json({
+
+                    message: 'No Resume Found'
+                })
+            }
+
+            res.json(resume)
 
         } catch (error) {
 
@@ -78,7 +42,7 @@ router.post(
 
             res.status(500).json({
 
-                message: 'Upload Failed'
+                message: 'Failed'
             })
         }
     }

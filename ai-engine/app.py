@@ -21,29 +21,32 @@ def analyze_resume():
 
     data = request.json
 
-    file_path = data.get('filePath')
+    resume_text = data.get('resumeText')
 
-    """
-    PDF → TEXT
-    """
+    if not resume_text:
 
-    resume_text = extract_text_from_pdf(file_path)
+        return jsonify({
 
-    """
-    TEXT → SKILLS
-    """
+            "message": "Resume text missing"
 
-    skills = extract_skills(resume_text)
+        }), 400
 
-    """
-    SIMPLE ATS SCORING
-    """
+    skills = extract_skills(
 
-    ats_score = len(skills) * 10
+        resume_text
+    )
+
+    ats_score = min(
+
+        len(skills) * 10,
+
+        100
+    )
 
     return jsonify({
 
         "skills": skills,
+
         "ats_score": ats_score
 
     })
@@ -53,20 +56,32 @@ def job_match():
 
     data = request.json
 
-    resume_text = data['resume']
+    resume_text = data.get(
 
-    job_text = data['job']
+        'resume',
+        ''
+    )
 
-    candidate_skills = data['candidateSkills']
+    job_text = data.get(
 
-    required_skills = data['requiredSkills']
+        'job',
+        ''
+    )
+
+    candidate_skills = extract_skills(
+
+        resume_text
+    )
+
+    required_skills = extract_skills(
+
+        job_text
+    )
 
     vectors = build_vectors(
 
         job_text,
-
         resume_text
-
     )
 
     similarity_score = calculate_similarity(
@@ -77,13 +92,13 @@ def job_match():
     gaps = skill_gap_analysis(
 
         candidate_skills,
-
         required_skills
     )
 
     final_score = calculate_final_score(
 
-        80,
+        len(candidate_skills) * 10,
+
         similarity_score
     )
 
@@ -95,7 +110,11 @@ def job_match():
 
         "matchedSkills": gaps["matched"],
 
-        "missingSkills": gaps["missing"]
+        "missingSkills": gaps["missing"],
+
+        "candidateSkills": candidate_skills,
+
+        "requiredSkills": required_skills
 
     })
 

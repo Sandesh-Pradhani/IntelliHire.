@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 
+project_management/
+
 # Python
 __pycache__/
 *.pyc
@@ -8,6 +10,10 @@ venv/
 
 # Environment Variables
 .env
+.antigravitycli
+.cd
+.qodo
+.clinerules
 
 # Build folders
 dist/

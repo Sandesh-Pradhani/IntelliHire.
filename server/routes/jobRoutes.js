@@ -23,23 +23,28 @@ router.post('/create', async (req, res) => {
     }
 })
 
-router.get('/', async (req, res) => {
+router.get(
 
-    try {
+    '/all',
 
-        const jobs = await Job.find()
+    async (req, res) => {
 
-        res.json(jobs)
+        try {
 
-    } catch (error) {
+            const jobs = await Job.find()
 
-        console.log(error)
+            res.json(jobs)
 
-        res.status(500).json({
+        } catch (error) {
 
-            message: 'Failed to fetch jobs'
-        })
+            console.log(error)
+
+            res.status(500).json({
+
+                message: 'Failed'
+            })
+        }
     }
-})
+)
 
 module.exports = router
