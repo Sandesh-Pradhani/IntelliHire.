@@ -3,7 +3,8 @@ const axios = require('axios')
 const upload = require('../middleware/uploadMiddleware')
 const authMiddleware = require('../middleware/authMiddleware')
 const Resume = require('../models/Resume')
-
+const fs = require('fs')
+const pdf = require('pdf-parse')
 const router = express.Router()
 
 /*
@@ -17,74 +18,122 @@ with field name "resume"
 */
 
 router.post(
+
     '/upload-resume',
 
     authMiddleware,
+
     upload.single('resume'),
 
     async (req, res) => {
 
         try {
 
-            /*
-            MULTER ADDS:
-
-            req.file
-            */
-
             const filePath = req.file.path
 
-            /*
-            SEND FILE PATH TO PYTHON AI
-            */
-
-            const aiUrl = process.env.AI_ENGINE_URL || 'http://localhost:8000'
+            const aiUrl =
+                process.env.AI_ENGINE_URL ||
+                'http://localhost:8000'
 
             let extractedSkills = []
+
             let atsScore = 0
 
             try {
 
-                const response = await axios.post(
-                    `${aiUrl}/analyze-resume`,
-                    {
-                        filePath: filePath
-                    }
+                /*
+                READ PDF
+                */
+
+                const dataBuffer =
+                    fs.readFileSync(filePath)
+
+                /*
+                EXTRACT TEXT
+                */
+
+                const pdfData =
+                    await pdf(dataBuffer)
+
+                const resumeText =
+                    pdfData.text
+
+                console.log(
+                    'PDF TEXT EXTRACTED'
                 )
 
-                extractedSkills = response.data.extractedSkills || response.data.skills || []
-                atsScore = response.data.atsScore || response.data.score || 0
+                /*
+                SEND TEXT TO AI
+                */
+
+                const response =
+                    await axios.post(
+
+                        `${aiUrl}/analyze-resume`,
+
+                        {
+                            resumeText
+                        }
+                    )
+
+                extractedSkills =
+                    response.data.skills || []
+
+                atsScore =
+                    response.data.ats_score || 0
+
+                console.log(
+                    'AI SUCCESS'
+                )
 
             } catch (aiError) {
 
-                console.log('AI engine unavailable, saving without AI analysis')
+                console.log(
+                    'AI ERROR'
+                )
+
+                console.log(
+                    aiError.message
+                )
+
+                if (aiError.response) {
+
+                    console.log(
+                        aiError.response.data
+                    )
+                }
             }
 
-            /*
-            SAVE TO DATABASE
-            */
+            const resume =
+                await Resume.create({
 
-            const resume = await Resume.create({
+                    userId: req.user.id,
 
-                userId: req.user.id,
+                    fileName:
+                        req.file.originalname,
 
-                fileName: req.file.originalname,
+                    extractedSkills,
 
-                extractedSkills,
-
-                atsScore
-
-            })
+                    atsScore
+                })
 
             res.json({
 
-                message: 'Resume uploaded successfully',
+                message:
+                    'Resume uploaded successfully',
 
                 resume: {
+
                     _id: resume._id,
-                    filename: resume.fileName,
-                    atsScore: resume.atsScore,
-                    extractedSkills: resume.extractedSkills
+
+                    filename:
+                        resume.fileName,
+
+                    atsScore:
+                        resume.atsScore,
+
+                    extractedSkills:
+                        resume.extractedSkills
                 }
             })
 
@@ -93,7 +142,9 @@ router.post(
             console.log(error)
 
             res.status(500).json({
-                message: 'Resume Upload Failed'
+
+                message:
+                    'Resume Upload Failed'
             })
         }
     }

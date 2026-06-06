@@ -83,7 +83,7 @@ function Dashboard() {
 
         const [historyRes, jobsRes, feedbackRes] = await Promise.allSettled([
           axios.get(`${import.meta.env.VITE_API_URL}/api/ai/history`, { headers }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/jobs`),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/jobs/all`),
           axios.get(`${import.meta.env.VITE_API_URL}/api/feedback`, { headers })
         ])
 

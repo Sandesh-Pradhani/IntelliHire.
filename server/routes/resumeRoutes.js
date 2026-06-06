@@ -7,7 +7,7 @@ const router = express.Router()
 
 router.get(
 
-    '/latest',
+    '/all',
 
     authMiddleware,
 
@@ -15,9 +15,9 @@ router.get(
 
         try {
 
-            const resume = await Resume.findOne({
+            const resumes = await Resume.find({
 
-                userId: req.user._id || req.user.id
+                userId: req.user.id
 
             })
 
@@ -26,17 +26,11 @@ router.get(
                 uploadedAt: -1
             })
 
-            if (!resume) {
+            res.json(resumes)
 
-                return res.status(404).json({
+        }
 
-                    message: 'No Resume Found'
-                })
-            }
-
-            res.json(resume)
-
-        } catch (error) {
+        catch (error) {
 
             console.log(error)
 

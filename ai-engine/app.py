@@ -20,7 +20,7 @@ def home():
 def analyze_resume():
 
     data = request.json
-
+    print(request.json)
     resume_text = data.get('resumeText')
 
     if not resume_text:

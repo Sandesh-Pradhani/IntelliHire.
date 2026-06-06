@@ -11,6 +11,9 @@ function JobMatch() {
 
     const [jobs, setJobs] = useState([])
     const [selectedJob, setSelectedJob] = useState('')
+    const [resumes, setResumes] = useState([])
+
+    const [selectedResume, setSelectedResume] = useState('')
 
     const [jobText, setJobText] = useState('')
     const [resumeText, setResumeText] = useState('')
@@ -25,9 +28,37 @@ function JobMatch() {
 
         fetchJobs()
 
-        fetchLatestResume()
+        fetchResumes()
 
     }, [])
+
+    const fetchResumes = async () => {
+
+    try {
+
+        const token = localStorage.getItem('token')
+
+        const response = await axios.get(
+   `${API_URL}/api/resumes/all`,
+   {
+      headers: {
+         Authorization: `Bearer ${token}`
+      }
+   }
+)
+
+console.log("RESUMES =", response.data)
+
+setResumes(response.data)
+
+    
+    }
+
+    catch (error) {
+
+        console.log(error)
+    }
+}
 
     const fetchJobs = async () => {
 
@@ -46,39 +77,6 @@ function JobMatch() {
         }
     }
 
-    const fetchLatestResume = async () => {
-
-        try {
-
-            const token = localStorage.getItem('token')
-
-            const response = await axios.get(
-
-                `${API_URL}/api/resumes/latest`,
-
-                {
-                    headers: {
-
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            )
-
-            const skills =
-
-                response.data.extractedSkills || []
-
-            setResumeText(
-
-                skills.join(', ')
-            )
-
-        } catch (error) {
-
-            console.log(error)
-        }
-    }
-
     const handleJobChange = (e) => {
 
         const jobId = e.target.value
@@ -87,8 +85,10 @@ function JobMatch() {
 
         const selected = jobs.find(
 
-            (job) => job._id === jobId
+            (job) => String(job._id) === String(jobId)
         )
+
+        console.log("SELECTED JOB:", selected)
 
         if (selected) {
 
@@ -109,6 +109,11 @@ function JobMatch() {
 
             setError('')
 
+            console.log("MATCH PAYLOAD:", {
+                job: jobText,
+                resume: resumeText
+            })
+
             const response = await axios.post(
 
                 `${API_URL}/api/recruiter/match`,
@@ -125,6 +130,8 @@ function JobMatch() {
                     }
                 }
             )
+
+            console.log("MATCH RESPONSE:", response.data)
 
             setResult(response.data)
 
@@ -205,6 +212,44 @@ function JobMatch() {
 
                     </select>
 
+                </div>
+
+                <div className="mt-6">
+                    <label className="font-semibold">
+                        Select Resume
+                    </label>
+                    <select
+                        value={selectedResume}
+                        onChange={(e) => {
+                            const resumeId = e.target.value
+                            setSelectedResume(resumeId)
+                            const resume = resumes.find(
+                                    r => String(r._id) === String(resumeId)
+                                )
+                            console.log("Selected Resume ID:", resumeId)
+                            console.log("Found Resume:", resume)
+                            if (resume) {
+                                setResumeText(
+                                    resume.extractedSkills.join(', ')
+                                )
+                            }
+                        }}
+                        className="w-full mt-3 border rounded-xl p-4"
+                    >
+                        <option value="">
+                            Select Resume
+                        </option>
+                        {
+                            resumes.map((resume) => (
+                                <option
+                                    key={resume._id}
+                                    value={resume._id}
+                                >
+                                    {resume.fileName}
+                                </option>
+                            ))
+                        }
+                    </select>
                 </div>
 
                 <div className="grid lg:grid-cols-2 gap-8 mt-10">
