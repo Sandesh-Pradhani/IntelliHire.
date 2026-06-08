@@ -13,6 +13,7 @@ import Jobs from './pages/Jobs'
 import Rankings from './pages/Rankings'
 import Feedback from './pages/Feedback'
 import JobMatch from './pages/JobMatch'
+import Applications from './pages/Applications'
 
 function App() {
 
@@ -130,6 +131,14 @@ function App() {
          
       </ProtectedRoute>
            }
+      />
+      <Route
+        path="/applications"
+        element={
+          <ProtectedRoute>
+            <Applications />
+          </ProtectedRoute>
+        }
       />
       
       </Routes>

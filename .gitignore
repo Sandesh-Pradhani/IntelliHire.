@@ -1,8 +1,10 @@
 # Dependencies
 node_modules/
 
+#project_files
 project_management/
-
+task-update.md
+_build.cmd
 # Python
 __pycache__/
 *.pyc

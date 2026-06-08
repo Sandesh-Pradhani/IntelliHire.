@@ -1,17 +1,18 @@
 const express = require('express')
 const cors = require('cors')
 const dotenv = require('dotenv')
+const path = require('path')
+
+dotenv.config({ path: path.join(__dirname, '.env') })
 
 const connectDB = require('./config/db')
-
+const applicationRoutes = require('./routes/applicationRoutes')
 const authRoutes = require('./routes/authRoutes')
 const aiRoutes = require('./routes/aiRoutes')
 const resumeRoutes = require('./routes/resumeRoutes')
 const jobRoutes = require('./routes/jobRoutes')
 const feedbackRoutes = require('./routes/feedbackRoutes')
 const recruiterRoutes = require('./routes/recruiterRoutes')
-
-dotenv.config()
 
 connectDB()
 
@@ -36,6 +37,12 @@ app.use('/api/ai', aiRoutes)
 app.use('/api/resumes', resumeRoutes)
 
 app.use('/api/jobs', jobRoutes)
+app.use(
+
+    '/api/applications',
+
+    applicationRoutes
+)
 
 app.use('/api/feedback', feedbackRoutes)
 app.use('/api/recruiter', recruiterRoutes)

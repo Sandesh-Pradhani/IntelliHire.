@@ -3,6 +3,7 @@ const axios = require('axios')
 const upload = require('../middleware/uploadMiddleware')
 const authMiddleware = require('../middleware/authMiddleware')
 const Resume = require('../models/Resume')
+const Job = require('../models/Job')
 const fs = require('fs')
 const pdf = require('pdf-parse')
 const router = express.Router()
@@ -190,6 +191,94 @@ router.get(
 
             res.status(500).json({
                 message: 'Failed to fetch history'
+            })
+        }
+    }
+)
+
+/*
+GET RANKINGS ROUTE
+
+Returns ranked candidates based on resumes and job matching
+Uses real MongoDB data + AI Engine ranking
+*/
+
+router.get(
+    '/rankings',
+
+    authMiddleware,
+
+    async (req, res) => {
+
+        try {
+
+            const aiUrl =
+                process.env.AI_ENGINE_URL ||
+                'http://localhost:8000'
+
+            // Fetch all resumes with user data for ranking
+            const resumes = await Resume.find()
+                .populate('userId', 'name email')
+                .sort({ atsScore: -1 })
+
+            if (!resumes.length) {
+                return res.json([])
+            }
+
+            // Get the latest job as the reference job description for ranking
+            const latestJob = await Job.findOne().sort({ createdAt: -1 })
+            const jobDescription = latestJob ? `${latestJob.title} ${latestJob.description} ${latestJob.requiredSkills ? latestJob.requiredSkills.join(' ') : ''}` : ''
+
+            // Map resumes to candidate format expected by AI Engine
+            const candidates = resumes
+                .filter(r => r.userId)
+                .map(r => ({
+                    _id: r._id.toString(),
+                    name: r.userId.name || r.fileName,
+                    skills: r.extractedSkills || []
+                }))
+
+            let rankings = []
+
+            try {
+                // Call AI Engine /rank-candidates with proper payload
+                const response = await axios.post(
+                    `${aiUrl}/rank-candidates`,
+                    {
+                        jobDescription,
+                        candidates
+                    }
+                )
+
+                rankings = response.data.rankings || []
+
+                console.log('AI Ranking SUCCESS:', rankings.length, 'candidates ranked')
+
+            } catch (aiError) {
+
+                console.log('AI Ranking unavailable:', aiError.message)
+
+                // Fallback: Use ATS scores from MongoDB sorted descending
+                rankings = candidates.map((c, index) => {
+                    const resume = resumes.find(r => r._id.toString() === c._id)
+                    return {
+                        candidateId: c._id,
+                        candidateName: c.name,
+                        score: resume ? resume.atsScore : 0,
+                        matchedSkills: c.skills,
+                        missingSkills: []
+                    }
+                }).sort((a, b) => b.score - a.score)
+            }
+
+            res.json(rankings)
+
+        } catch (error) {
+
+            console.log(error)
+
+            res.status(500).json({
+                message: 'Failed to fetch rankings'
             })
         }
     }

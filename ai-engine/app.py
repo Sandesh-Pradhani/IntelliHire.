@@ -118,6 +118,87 @@ def job_match():
 
     })
 
+@app.route('/rank-candidates', methods=['POST'])
+def rank_candidates():
+    """
+    Rank candidates based on job description and candidate data.
+
+    Expected input:
+    {
+        "jobDescription": "...",
+        "candidates": [
+            {
+                "_id": "...",
+                "name": "...",
+                "skills": ["python", "react"]
+            }
+        ]
+    }
+
+    Response:
+    {
+        "rankings": [
+            {
+                "candidateId": "...",
+                "candidateName": "...",
+                "score": 92,
+                "matchedSkills": ["python"],
+                "missingSkills": ["java"]
+            }
+        ]
+    }
+    """
+
+    data = request.json
+
+    job_description = data.get('jobDescription', '')
+    candidates = data.get('candidates', [])
+
+    # Extract required skills from job description
+    required_skills = extract_skills(job_description)
+
+    if not required_skills:
+        # If no required skills can be extracted, fallback to empty ranking
+        return jsonify({
+            "rankings": []
+        })
+
+    rankings = []
+
+    for candidate in candidates:
+        candidate_id = candidate.get('_id', '')
+        candidate_name = candidate.get('name', 'Unknown')
+        candidate_skills = [s.lower() for s in candidate.get('skills', [])]
+
+        # Reuse existing skill_gap_analysis
+        gaps = skill_gap_analysis(
+            candidate_skills,
+            required_skills
+        )
+
+        matched_skills = gaps["matched"]
+        missing_skills = gaps["missing"]
+
+        # Calculate match percentage: (matchedSkills / requiredSkills) * 100
+        match_percentage = round(
+            (len(matched_skills) / len(required_skills)) * 100
+        ) if required_skills else 0
+
+        rankings.append({
+            "candidateId": candidate_id,
+            "candidateName": candidate_name,
+            "score": match_percentage,
+            "matchedSkills": matched_skills,
+            "missingSkills": missing_skills
+        })
+
+    # Sort descending by score (highest match first)
+    rankings.sort(key=lambda r: r["score"], reverse=True)
+
+    return jsonify({
+        "rankings": rankings
+    })
+
 if __name__ == '__main__':
 
     app.run(port=8000)

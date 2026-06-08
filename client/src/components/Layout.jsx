@@ -12,7 +12,8 @@ import {
   X,
   User,
   LogOut,
-  Sparkles
+  Sparkles,
+  FileCheck
 } from 'lucide-react'
 
 function Layout({ children }) {
@@ -50,6 +51,11 @@ function Layout({ children }) {
       path: '/feedback',
       label: 'Feedback',
       icon: MessageSquare
+    },
+    {
+      path: '/applications',
+      label: 'Applications',
+      icon: FileCheck
     },
     {
       path: '/job-match',

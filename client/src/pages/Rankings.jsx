@@ -36,7 +36,6 @@ function Rankings() {
         } catch (err) {
 
             console.log('Rankings API error:', err)
-            // Fallback to mock data silently
             setCandidates([])
 
         } finally {
@@ -51,28 +50,7 @@ function Rankings() {
 
     }, [])
 
-    const mockCandidates = [
-
-        {
-            name: 'Sandesh Pradhani',
-            score: 92,
-            skills: ['Python', 'React', 'MongoDB']
-        },
-
-        {
-            name: 'Rahul Sharma',
-            score: 84,
-            skills: ['Java', 'NodeJS', 'Express']
-        },
-
-        {
-            name: 'Aarav Mehta',
-            score: 89,
-            skills: ['Python', 'PyTorch', 'AWS']
-        }
-    ]
-
-    const displayCandidates = candidates.length > 0 ? candidates : mockCandidates
+    const displayCandidates = candidates
 
     return (
 
@@ -117,7 +95,13 @@ function Rankings() {
                         <p className="text-sm text-slate-400 mt-1">Upload and evaluate resumes to see rankings here.</p>
                     </div>
                 ) : (
-                    displayCandidates.map((candidate, index) => (
+                    displayCandidates.map((candidate, index) => {
+                        // Support both API response formats: AI Engine (candidateName/candidateId) and fallback (name/_id)
+                        const name = candidate.candidateName || candidate.name || 'Unknown'
+                        const cid = candidate.candidateId || candidate._id || index
+                        const score = candidate.score || 0
+                        const skills = candidate.matchedSkills || candidate.skills || []
+                        return (
 
                         <div
 
@@ -134,14 +118,14 @@ function Rankings() {
                                         #{index + 1}
                                     </span>
                                     <h2 className="text-2xl font-bold text-slate-800">
-                                        {candidate.name}
+                                        {name}
                                     </h2>
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 mt-4">
 
                                     {
-                                        candidate.skills?.map((skill, idx) => (
+                                        skills?.map((skill, idx) => (
 
                                             <span
 
@@ -162,7 +146,7 @@ function Rankings() {
 
                                 <h2 className="text-5xl font-bold text-blue-600">
 
-                                    {candidate.score}
+                                    {score}
                                 </h2>
 
                                 <p className="text-slate-500 text-sm mt-1">
@@ -173,7 +157,8 @@ function Rankings() {
                             </div>
 
                         </div>
-                    ))
+                        )
+                    })
                 )}
 
             </div>
