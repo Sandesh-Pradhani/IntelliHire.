@@ -119,6 +119,8 @@ setResumes(response.data)
                 `${API_URL}/api/recruiter/match`,
 
                 {
+                    jobId: selectedJob,
+                    resumeId: selectedResume,
                     job: jobText,
                     resume: resumeText
                 },

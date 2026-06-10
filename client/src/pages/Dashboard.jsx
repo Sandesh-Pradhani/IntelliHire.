@@ -37,15 +37,15 @@ const MOCK_JOBS = [
   { title: 'AI Researcher', company: 'BrainLabs', description: 'Python, PyTorch, LLMs expert' }
 ]
 
+const MOCK_FEEDBACKS = [
+  { message: 'The resume parsing was extremely accurate and fast!', rating: 5, _id: 'fb1' },
+  { message: 'Loved the skills extraction feature. Made filtering very easy.', rating: 4, _id: 'fb2' }
+]
+
 const MOCK_CANDIDATES = [
   { name: 'Sandesh Pradhani', score: 92, skills: ['Python', 'React', 'MongoDB'] },
   { name: 'Rahul Sharma', score: 84, skills: ['Java', 'NodeJS', 'Express'] },
   { name: 'Aarav Mehta', score: 89, skills: ['Python', 'PyTorch', 'AWS'] }
-]
-
-const MOCK_FEEDBACKS = [
-  { message: 'The resume parsing was extremely accurate and fast!', rating: 5, _id: 'fb1' },
-  { message: 'Loved the skills extraction feature. Made filtering very easy.', rating: 4, _id: 'fb2' }
 ]
 
 function Dashboard() {
@@ -53,6 +53,8 @@ function Dashboard() {
   const [resumes, setResumes] = useState([])
   const [jobs, setJobs] = useState([])
   const [feedbacks, setFeedbacks] = useState([])
+  const [applications, setApplications] = useState([])
+  const [appStats, setAppStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -81,15 +83,19 @@ function Dashboard() {
         const token = localStorage.getItem('token')
         const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
-        const [historyRes, jobsRes, feedbackRes] = await Promise.allSettled([
+        const [historyRes, jobsRes, feedbackRes, appsRes, statsRes] = await Promise.allSettled([
           axios.get(`${import.meta.env.VITE_API_URL}/api/ai/history`, { headers }),
           axios.get(`${import.meta.env.VITE_API_URL}/api/jobs/all`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/feedback`, { headers })
+          axios.get(`${import.meta.env.VITE_API_URL}/api/feedback`, { headers }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/applications`, { headers }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/applications/stats`, { headers })
         ])
 
         if (historyRes.status === 'fulfilled') setResumes(historyRes.value.data || [])
         if (jobsRes.status === 'fulfilled') setJobs(jobsRes.value.data || [])
         if (feedbackRes.status === 'fulfilled') setFeedbacks(feedbackRes.value.data || [])
+        if (appsRes.status === 'fulfilled') setApplications(appsRes.value.data || [])
+        if (statsRes.status === 'fulfilled') setAppStats(statsRes.value.data || null)
 
         // Set error only if all requests failed
         if (historyRes.status === 'rejected' && jobsRes.status === 'rejected' && feedbackRes.status === 'rejected') {
@@ -110,9 +116,11 @@ function Dashboard() {
   const activeResumes = resumes.length > 0 ? resumes : MOCK_RESUMES
   const activeJobs = jobs.length > 0 ? jobs : MOCK_JOBS
   const activeFeedbacks = feedbacks.length > 0 ? feedbacks : MOCK_FEEDBACKS
+  const activeApplications = applications.length > 0 ? applications : []
   const activeCandidates = MOCK_CANDIDATES
 
   const totalResumesCount = activeResumes.length
+  const totalApplicationsCount = appStats?.totalApplications || activeApplications.length || 0
 
   const avgAtsScore = useMemo(() => {
     if (activeResumes.length === 0) return 0
@@ -125,7 +133,9 @@ function Dashboard() {
     return Math.round(total / activeResumes.length)
   }, [activeResumes])
 
-  const candidatesRankedCount = activeCandidates.length + (resumes.length > 0 ? resumes.filter(r => r.atsScore >= 75).length : 2)
+  const avgMatchScore = appStats?.averageMatchScore || 0
+
+  const candidatesRankedCount = appStats?.totalApplications || activeApplications.length || (activeCandidates.length + (resumes.length > 0 ? resumes.filter(r => r.atsScore >= 75).length : 2))
 
   const activeJobsCount = activeJobs.length
 
@@ -246,7 +256,7 @@ function Dashboard() {
           ) : (
             <>
               <StatCard
-                label="Resumes Analyzed"
+                label="Total Resumes"
                 value={totalResumesCount}
                 icon={FileText}
                 iconColor="blue"
@@ -264,8 +274,8 @@ function Dashboard() {
                 trendColor="emerald"
               />
               <StatCard
-                label="Candidates Ranked"
-                value={candidatesRankedCount}
+                label="Total Applications"
+                value={totalApplicationsCount}
                 icon={Award}
                 iconColor="violet"
                 trend="Stable"
@@ -283,6 +293,23 @@ function Dashboard() {
             </>
           )}
         </section>
+
+        {/* Average Match Score Bar - from real data */}
+        {avgMatchScore > 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-5 flex items-center gap-4">
+            <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-600">Average Match Score</p>
+              <p className="text-2xl font-extrabold text-blue-700">{avgMatchScore}%</p>
+            </div>
+            <div className="ml-auto flex items-center gap-2 text-xs text-slate-400">
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              Across all applications
+            </div>
+          </div>
+        )}
 
         {/* ANALYTICS SECTION */}
         <section className="grid lg:grid-cols-2 gap-8">
@@ -472,31 +499,30 @@ function Dashboard() {
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                    Ranked Candidates
-                  </h4>
-                  <div className="grid sm:grid-cols-3 gap-4">
-                    {activeCandidates.map((c, index) => (
-                      <div key={index} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col justify-between">
-                        <div>
-                          <p className="text-sm font-bold text-slate-900 truncate">{c.name}</p>
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {c.skills.slice(0, 2).map(s => (
-                              <span key={s} className="text-[10px] font-semibold bg-white border border-slate-200/80 text-slate-500 px-1.5 py-0.5 rounded-md">
-                                {s}
-                              </span>
-                            ))}
+                {/* Recent Applications */}
+                {activeApplications.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                      Recent Applications
+                    </h4>
+                    <div className="space-y-2">
+                      {activeApplications.slice(0, 3).map((app, index) => (
+                        <div key={index} className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-xl">
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-1.5 bg-blue-50 text-blue-500 rounded-lg">
+                              <Briefcase className="h-3.5 w-3.5" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-700">{app.candidateName || 'Candidate'}</p>
+                              <p className="text-[11px] text-slate-400">{app.jobTitle || 'Position'}</p>
+                            </div>
                           </div>
+                          <span className="text-xs font-bold text-blue-600">{app.matchScore || 0}%</span>
                         </div>
-                        <div className="mt-3 flex justify-between items-center border-t border-slate-200/60 pt-2">
-                          <span className="text-[10px] font-medium text-slate-400">Match Rank</span>
-                          <span className="text-xs font-extrabold text-blue-600">{c.score}%</span>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>
