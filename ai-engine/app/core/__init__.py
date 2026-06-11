@@ -1,0 +1,1 @@
+# IntelliHire Core Configuration Package

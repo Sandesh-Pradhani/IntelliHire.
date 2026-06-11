@@ -1,0 +1,1 @@
+# IntelliHire Pydantic Schemas Package
