@@ -3,8 +3,7 @@ node_modules/
 
 #project_files
 project_management/
-task-update.md
-task_progress.md
+
 _build.cmd
 # Python
 __pycache__/
