@@ -13,6 +13,7 @@ const resumeRoutes = require('./routes/resumeRoutes')
 const jobRoutes = require('./routes/jobRoutes')
 const feedbackRoutes = require('./routes/feedbackRoutes')
 const recruiterRoutes = require('./routes/recruiterRoutes')
+const academicRoutes = require('./routes/academicRoutes')
 
 connectDB()
 
@@ -54,6 +55,7 @@ app.use(
 
 app.use('/api/feedback', feedbackRoutes)
 app.use('/api/recruiter', recruiterRoutes)
+app.use('/api/academic', academicRoutes)
 
 app.get('/', (req, res) => {
 

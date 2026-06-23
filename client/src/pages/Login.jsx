@@ -43,7 +43,12 @@ function Login() {
                 response.data.token
             )
 
-            navigate('/dashboard')
+            const userRole = response.data.user.role
+            if (userRole === 'candidate') {
+                navigate('/candidate/dashboard')
+            } else {
+                navigate('/recruiter/dashboard')
+            }
 
         } catch (error) {
 
