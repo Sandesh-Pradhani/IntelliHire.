@@ -65,7 +65,7 @@ function RecruiterDashboard() {
 
         const [jobsRes, appsRes, fbRes] = await Promise.allSettled([
           axios.get(`${import.meta.env.VITE_API_URL}/api/jobs/all`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/applications`, { headers }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/applications/recruiter`, { headers }),
           axios.get(`${import.meta.env.VITE_API_URL}/api/feedback`, { headers }),
         ])
 
@@ -81,10 +81,10 @@ function RecruiterDashboard() {
     fetchData()
   }, [])
 
-  const activeJobs = jobs.length > 0 ? jobs : MOCK_JOBS
+  const activeJobs = jobs
   const totalApps = applications.length
-  const pendingApps = applications.filter(a => a.status === 'pending').length
-  const shortlistedApps = applications.filter(a => a.status === 'shortlisted' || a.status === 'accepted').length
+  const pendingApps = applications.filter(a => a.status === 'Applied').length
+  const shortlistedApps = applications.filter(a => a.status === 'Shortlisted' || a.status === 'accepted').length
 
   return (
     <Layout>
@@ -105,7 +105,7 @@ function RecruiterDashboard() {
               {currentDate}
             </p>
             <div className="flex flex-wrap gap-3 mt-6">
-              <Link to="/jobs" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-lg transition-all duration-200">
+              <Link to="/jobs/manage" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-lg transition-all duration-200">
                 <Plus className="h-4.5 w-4.5" />
                 Manage Jobs
               </Link>

@@ -48,15 +48,22 @@ const MOCK_CANDIDATES = [
   { name: 'Aarav Mehta', score: 89, skills: ['Python', 'PyTorch', 'AWS'] }
 ]
 
+import { Navigate } from 'react-router-dom'
+
 function Dashboard() {
   const { user } = useContext(AuthContext)
-  const [resumes, setResumes] = useState([])
-  const [jobs, setJobs] = useState([])
-  const [feedbacks, setFeedbacks] = useState([])
-  const [applications, setApplications] = useState([])
-  const [appStats, setAppStats] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+
+  if (user?.role === 'candidate') {
+    return <Navigate to="/candidate/dashboard" replace />
+  }
+  if (user?.role === 'recruiter') {
+    return <Navigate to="/recruiter/dashboard" replace />
+  }
+
+  return <Navigate to="/login" replace />
+}
+
+function LegacyDashboard() {
 
   // Format current date
   const currentDate = useMemo(() => {

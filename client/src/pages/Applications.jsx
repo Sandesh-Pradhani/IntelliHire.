@@ -49,7 +49,7 @@ function Applications() {
             const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
             const [appsRes, statsRes] = await Promise.all([
-                axios.get(`${API_URL}/api/applications`, { headers }),
+                axios.get(`${API_URL}/api/applications/recruiter`, { headers }),
                 axios.get(`${API_URL}/api/applications/stats`, { headers })
             ])
 
@@ -72,8 +72,8 @@ function Applications() {
         try {
             const token = localStorage.getItem('token')
             const headers = token ? { Authorization: `Bearer ${token}` } : {}
-            await axios.patch(
-                `${API_URL}/api/applications/${id}/status`,
+            await axios.put(
+                `${API_URL}/api/applications/status/${id}`,
                 { status },
                 { headers }
             )

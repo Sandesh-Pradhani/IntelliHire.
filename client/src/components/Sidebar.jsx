@@ -21,13 +21,16 @@ import {
   User,
   LogOut,
   BarChart3,
-  Users
+  Users,
+  Plus,
+  Brain,
+  TrendingUp
 } from 'lucide-react'
 
 // ─── Role-based Group Definitions ────────────────────────────────────────────
 const CANDIDATE_GROUPS = [
   {
-    id: 'candidate-management',
+    id: 'candidate-profile',
     label: 'My Profile',
     icon: User,
     role: 'candidate',
@@ -41,43 +44,59 @@ const CANDIDATE_GROUPS = [
     ],
   },
   {
-    id: 'candidate-applications',
-    label: 'Applications',
-    icon: FileCheck,
+    id: 'candidate-jobs',
+    label: 'Jobs',
+    icon: Briefcase,
     role: 'candidate',
     items: [
       { path: '/jobs', label: 'Browse Jobs', icon: Briefcase },
       { path: '/candidate/applications', label: 'My Applications', icon: FileCheck },
     ],
   },
+  {
+    id: 'candidate-ai',
+    label: 'AI',
+    icon: Sparkles,
+    role: 'candidate',
+    items: [
+      { path: '/ats-analysis', label: 'ATS Analysis', icon: BarChart3, disabled: true, badge: 'Soon' },
+      { path: '/job-match', label: 'Job Match', icon: Sparkles, disabled: true, badge: 'Soon' },
+      { path: '/skill-gap', label: 'Skill Gap Analysis', icon: Brain, disabled: true, badge: 'Soon' },
+    ],
+  },
 ]
 
 const RECRUITER_GROUPS = [
   {
-    id: 'recruitment',
-    label: 'Recruitment',
+    id: 'recruiter-jobs',
+    label: 'Jobs',
     icon: Briefcase,
     role: 'recruiter',
     items: [
-      { path: '/jobs', label: 'Jobs', icon: Briefcase },
-      { path: '/applications', label: 'Applications', icon: FileCheck },
-      { path: '/job-match', label: 'AI Job Matching', icon: Sparkles },
-      { path: '/rankings', label: 'Candidate Rankings', icon: Award },
+      { path: '/jobs/create', label: 'Create Job', icon: Plus },
+      { path: '/jobs/manage', label: 'Manage Jobs', icon: Briefcase },
     ],
   },
   {
-    id: 'communication',
-    label: 'Communication',
-    icon: MessageSquare,
+    id: 'recruiter-candidates',
+    label: 'Candidates',
+    icon: Users,
     role: 'recruiter',
-    items: [{ path: '/feedback', label: 'Feedback', icon: MessageSquare }],
+    items: [
+      { path: '/applications', label: 'Applications', icon: FileCheck },
+      { path: '/rankings', label: 'Candidate Rankings', icon: Award },
+      { path: '/pipeline', label: 'Pipeline', icon: TrendingUp, disabled: true, badge: 'Soon' },
+    ],
   },
   {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings,
+    id: 'recruiter-ai',
+    label: 'AI',
+    icon: Sparkles,
     role: 'recruiter',
-    items: [],
+    items: [
+      { path: '/hiring-insights', label: 'Hiring Insights', icon: Brain, disabled: true, badge: 'Soon' },
+      { path: '/job-match', label: 'Job Match', icon: Sparkles },
+    ],
   },
 ]
 
@@ -87,7 +106,7 @@ function getExpandedDefaults(groups) {
     const saved = localStorage.getItem('sidebar_expanded_groups')
     if (saved) return JSON.parse(saved)
   } catch {
-    /* ignore */
+    localStorage.removeItem('sidebar_expanded_groups')
   }
   const path = window.location.pathname
   for (const group of groups) {

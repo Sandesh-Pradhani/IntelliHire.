@@ -55,6 +55,38 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/resume-upload"
+          element={
+            <ProtectedRoute requiredRole="candidate">
+              <ResumeUpload />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/resume-history"
+          element={
+            <ProtectedRoute requiredRole="candidate">
+              <ResumeHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/academic-profile"
+          element={
+            <ProtectedRoute requiredRole="candidate">
+              <AcademicProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute requiredRole="candidate">
+              <Jobs action="browse" />
+            </ProtectedRoute>
+          }
+        />
 
         {/* RECRUITER ROUTES */}
         <Route
@@ -65,36 +97,26 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* SHARED PROTECTED ROUTES (accessible by both roles) */}
         <Route
-          path="/resume-upload"
+          path="/jobs/create"
           element={
-            <ProtectedRoute>
-              <ResumeUpload />
+            <ProtectedRoute requiredRole="recruiter">
+              <Jobs action="create" />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/resume-history"
+          path="/jobs/manage"
           element={
-            <ProtectedRoute>
-              <ResumeHistory />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/jobs"
-          element={
-            <ProtectedRoute>
-              <Jobs />
+            <ProtectedRoute requiredRole="recruiter">
+              <Jobs action="manage" />
             </ProtectedRoute>
           }
         />
         <Route
           path="/rankings"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="recruiter">
               <Rankings />
             </ProtectedRoute>
           }
@@ -102,7 +124,7 @@ function App() {
         <Route
           path="/feedback"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="recruiter">
               <Feedback />
             </ProtectedRoute>
           }
@@ -110,7 +132,7 @@ function App() {
         <Route
           path="/job-match"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="recruiter">
               <JobMatch />
             </ProtectedRoute>
           }
@@ -118,16 +140,8 @@ function App() {
         <Route
           path="/applications"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="recruiter">
               <Applications />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/academic-profile"
-          element={
-            <ProtectedRoute>
-              <AcademicProfile />
             </ProtectedRoute>
           }
         />

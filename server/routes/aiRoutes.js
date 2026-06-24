@@ -2,6 +2,7 @@ const express = require('express')
 const axios = require('axios')
 const upload = require('../middleware/uploadMiddleware')
 const authMiddleware = require('../middleware/authMiddleware')
+const { requireRole } = require('../middleware/roleMiddleware')
 const Resume = require('../models/Resume')
 const Job = require('../models/Job')
 const fs = require('fs')
@@ -23,6 +24,7 @@ router.post(
     '/upload-resume',
 
     authMiddleware,
+    requireRole('candidate'),
 
     upload.single('resume'),
 
@@ -161,6 +163,7 @@ router.get(
     '/history',
 
     authMiddleware,
+    requireRole('candidate'),
 
     async (req, res) => {
 
@@ -207,6 +210,7 @@ router.get(
     '/rankings',
 
     authMiddleware,
+    requireRole('recruiter'),
 
     async (req, res) => {
 

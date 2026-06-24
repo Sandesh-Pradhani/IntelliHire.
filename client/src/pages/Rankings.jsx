@@ -23,7 +23,7 @@ function Rankings() {
 
             // Try fetching from applications first (sorted by matchScore)
             const appsRes = await axios.get(
-                `${import.meta.env.VITE_API_URL}/api/applications`,
+                `${import.meta.env.VITE_API_URL}/api/applications/recruiter`,
                 { headers }
             )
 

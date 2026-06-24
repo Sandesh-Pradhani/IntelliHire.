@@ -21,7 +21,12 @@ router.post('/register', async (req, res) => {
         */
 
         const validRoles = ['candidate', 'recruiter']
-        const userRole = validRoles.includes(role) ? role : 'candidate'
+        
+        if (!role || !validRoles.includes(role)) {
+            return res.status(400).json({
+                message: 'Role selection is required and must be either "candidate" or "recruiter"'
+            })
+        }
 
         /*
         CHECK EXISTING USER
@@ -51,7 +56,7 @@ router.post('/register', async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: userRole
+            role: role
 
         })
 

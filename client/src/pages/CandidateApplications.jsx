@@ -40,7 +40,7 @@ function CandidateApplications() {
       try {
         const token = localStorage.getItem('token')
         const { data } = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/applications`,
+          `${import.meta.env.VITE_API_URL}/api/applications/candidate`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
         setApplications(data || [])

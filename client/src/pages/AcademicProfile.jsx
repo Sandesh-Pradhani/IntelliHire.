@@ -76,19 +76,34 @@ function AcademicProfile() {
     const saveProfile = async () => {
 
         try {
+            const semesterStr = String(profile.currentSemester || '').trim()
+            if (!/^\d+$/.test(semesterStr)) {
+                alert('Current Semester must be a number (e.g., 7 instead of 7th)')
+                return
+            }
 
             setLoading(true)
+
+            const sanitized = {
+                ...profile,
+                cgpa: Number(profile.cgpa) || 0,
+                branch: profile.branch.trim(),
+                college: profile.college.trim(),
+                graduationYear: parseInt(profile.graduationYear, 10) || new Date().getFullYear(),
+                currentSemester: parseInt(semesterStr, 10),
+                backlogs: parseInt(profile.backlogs, 10) || 0
+            }
 
             if (exists) {
 
                 await updateAcademicProfile(
-                    profile
+                    sanitized
                 )
 
             } else {
 
                 await createAcademicProfile(
-                    profile
+                    sanitized
                 )
 
                 setExists(true)

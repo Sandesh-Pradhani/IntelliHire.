@@ -45,7 +45,7 @@ function CandidateDashboard() {
 
         const [historyRes, appsRes] = await Promise.allSettled([
           axios.get(`${import.meta.env.VITE_API_URL}/api/ai/history`, { headers }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/applications`, { headers }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/applications/candidate`, { headers }),
         ])
 
         if (historyRes.status === 'fulfilled') setResumes(historyRes.value.data || [])
@@ -174,7 +174,7 @@ function CandidateDashboard() {
               <p className="text-xs text-slate-400">Track your job application status</p>
             </div>
             <Link
-              to="/applications"
+              to="/candidate/applications"
               className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline"
             >
               View all <ArrowRight className="h-3 w-3" />

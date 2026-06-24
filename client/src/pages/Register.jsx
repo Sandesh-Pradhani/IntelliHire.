@@ -8,11 +8,15 @@ function Register() {
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
-    const [role, setRole] = useState('candidate')
+    const [role, setRole] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
 
     const handleRegister = async () => {
+        if (!role) {
+            setError('Please select a role (Candidate or Recruiter)')
+            return
+        }
         setLoading(true)
         setError('')
         try {

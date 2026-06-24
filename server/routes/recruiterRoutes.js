@@ -1,5 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
+const { requireRole } = require('../middleware/roleMiddleware');
 const { matchCandidate } = require('../services/aiService');
 const Application = require('../models/Application');
 const Job = require('../models/Job');
@@ -16,6 +17,7 @@ const router = express.Router();
 router.post(
     '/match',
     authMiddleware,
+    requireRole('recruiter'),
     async (req, res) => {
         try {
             const { jobId, resumeId, job, resume, candidateSkills, requiredSkills } = req.body;
@@ -45,15 +47,15 @@ router.post(
 
                         // Check if application already exists for this candidate + job
                         const existingApp = await Application.findOne({
-                            candidate: resumeDoc.userId,
-                            job: jobId
+                            candidateId: resumeDoc.userId,
+                            jobId: jobId
                         });
 
                         if (!existingApp) {
                             const applicationData = {
-                                candidate: resumeDoc.userId,
-                                resume: resumeId,
-                                job: jobId,
+                                candidateId: resumeDoc.userId,
+                                resumeId: resumeId,
+                                jobId: jobId,
                                 candidateName: candidateUser ? candidateUser.name : 'Unknown',
                                 candidateEmail: candidateUser ? candidateUser.email : 'Unknown',
                                 jobTitle: jobDoc.title || 'Unknown',

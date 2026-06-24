@@ -5,6 +5,7 @@ const router = express.Router()
 const AcademicProfile = require('../models/AcademicProfile')
 
 const authMiddleware = require('../middleware/authMiddleware')
+const { requireRole } = require('../middleware/roleMiddleware')
 
 /*
 CREATE PROFILE
@@ -15,6 +16,7 @@ router.post(
     '/',
 
     authMiddleware,
+    requireRole('candidate'),
 
     async (req, res) => {
 
@@ -30,6 +32,12 @@ router.post(
                 backlogs
 
             } = req.body
+
+            if (currentSemester !== undefined && (isNaN(Number(currentSemester)) || !/^\d+$/.test(String(currentSemester).trim()))) {
+                return res.status(400).json({
+                    message: 'Current Semester must be a number (e.g. 7 instead of 7th)'
+                })
+            }
 
             const existingProfile =
                 await AcademicProfile.findOne({
@@ -86,6 +94,7 @@ router.get(
     '/',
 
     authMiddleware,
+    requireRole('candidate'),
 
     async (req, res) => {
 
@@ -120,10 +129,18 @@ router.put(
     '/',
 
     authMiddleware,
+    requireRole('candidate'),
 
     async (req, res) => {
 
         try {
+
+            const { currentSemester } = req.body
+            if (currentSemester !== undefined && (isNaN(Number(currentSemester)) || !/^\d+$/.test(String(currentSemester).trim()))) {
+                return res.status(400).json({
+                    message: 'Current Semester must be a number (e.g. 7 instead of 7th)'
+                })
+            }
 
             const updatedProfile =
                 await AcademicProfile.findOneAndUpdate(

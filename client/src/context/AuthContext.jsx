@@ -2,6 +2,22 @@ import { createContext, useState } from 'react'
 
 export const AuthContext = createContext()
 
+function getStoredUser() {
+    const storedUser = localStorage.getItem('user')
+
+    if (!storedUser) {
+        return null
+    }
+
+    try {
+        return JSON.parse(storedUser)
+    } catch {
+        localStorage.removeItem('user')
+        localStorage.removeItem('token')
+        return null
+    }
+}
+
 function AuthProvider({ children }) {
 
     /*
@@ -10,11 +26,7 @@ function AuthProvider({ children }) {
     localStorage survives refresh.
     */
 
-    const [user, setUser] = useState(
-
-        JSON.parse(localStorage.getItem('user'))
-
-    )
+    const [user, setUser] = useState(getStoredUser)
 
     const login = (userData, token) => {
 
