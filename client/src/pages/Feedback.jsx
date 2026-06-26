@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-import Layout from '../components/Layout'
 import FeedbackCard from '../components/FeedbackCard'
 import Skeleton from '../components/ui/Skeleton'
 
@@ -53,9 +52,7 @@ function Feedback() {
     }, [])
 
     return (
-
-        <Layout>
-
+        <div className="space-y-8 animate-fade-in">
             <h1 className="text-4xl font-bold text-slate-800 flex items-center gap-3">
                 <MessageSquare className="h-8 w-8 text-blue-600" />
                 Feedback
@@ -147,7 +144,7 @@ function Feedback() {
                 </div>
             </div>
 
-        </Layout>
+        </div>
     )
 }
 

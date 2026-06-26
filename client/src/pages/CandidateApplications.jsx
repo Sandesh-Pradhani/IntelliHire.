@@ -1,6 +1,5 @@
 import { useState, useEffect, useContext } from 'react'
 import { AuthContext } from '../context/AuthContext'
-import Layout from '../components/Layout'
 import axios from 'axios'
 import {
   Briefcase,
@@ -63,8 +62,7 @@ function CandidateApplications() {
   }, {})
 
   return (
-    <Layout>
-      <main className="space-y-8 animate-fade-in pb-12">
+    <main className="space-y-8 animate-fade-in pb-12">
         <div>
           <h1 className="text-4xl font-bold text-slate-800">My Applications</h1>
           <p className="text-slate-500 mt-2">Track the status of your job applications</p>
@@ -157,8 +155,7 @@ function CandidateApplications() {
             })}
           </div>
         )}
-      </main>
-    </Layout>
+    </main>
   )
 }
 

@@ -1,7 +1,6 @@
 import { useState, useEffect, useContext } from 'react'
 import axios from 'axios'
 import { AuthContext } from '../context/AuthContext'
-import Layout from '../components/Layout'
 import Skeleton from '../components/ui/Skeleton'
 import { Briefcase, Plus, Trash2 } from 'lucide-react'
 
@@ -124,7 +123,7 @@ function Jobs({ action }) {
     const showJobList = role === 'candidate' || (role === 'recruiter' && action === 'manage')
 
     return (
-        <Layout>
+        <div className="space-y-8 animate-fade-in">
             <h1 className="text-4xl font-bold text-slate-800 flex items-center gap-3">
                 <Briefcase className="h-8 w-8 text-blue-600" />
                 {role === 'candidate' ? 'Browse Jobs' : action === 'create' ? 'Create New Job' : 'Job Management'}
@@ -279,7 +278,7 @@ function Jobs({ action }) {
                     )}
                 </div>
             )}
-        </Layout>
+        </div>
     )
 }
 

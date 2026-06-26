@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthContext } from '../context/AuthContext'
-import Layout from '../components/Layout'
 import axios from 'axios'
 import {
   FileText,
@@ -76,8 +75,7 @@ function CandidateDashboard() {
   }
 
   return (
-    <Layout>
-      <main className="space-y-8 animate-fade-in pb-12">
+    <main className="space-y-8 animate-fade-in pb-12">
         {/* HERO */}
         <section className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 text-white shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
@@ -255,8 +253,7 @@ function CandidateDashboard() {
             </div>
           ))}
         </section>
-      </main>
-    </Layout>
+    </main>
   )
 }
 

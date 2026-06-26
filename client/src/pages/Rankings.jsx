@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-import Layout from '../components/Layout'
 import Skeleton from '../components/ui/Skeleton'
 
 import { Award, Users, TrendingUp, Medal, Sparkles } from 'lucide-react'
@@ -94,8 +93,7 @@ function Rankings() {
     }
 
     return (
-        <Layout>
-            <div className="pb-12 space-y-6 animate-fade-in">
+        <div className="pb-12 space-y-6 animate-fade-in">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
@@ -249,8 +247,7 @@ function Rankings() {
                         })
                     )}
                 </div>
-            </div>
-        </Layout>
+        </div>
     )
 }
 

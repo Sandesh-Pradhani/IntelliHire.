@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-import Layout from '../components/Layout'
 import MatchCard from '../components/MatchCard'
 import SkillGapCard from '../components/SkillGapCard'
 
@@ -155,10 +154,7 @@ setResumes(response.data)
     }
 
     return (
-
-        <Layout>
-
-            <div>
+        <div>
 
                 <h1 className="text-5xl font-bold text-slate-800">
 
@@ -361,9 +357,7 @@ setResumes(response.data)
                     )
                 }
 
-            </div>
-
-        </Layout>
+        </div>
     )
 }
 
