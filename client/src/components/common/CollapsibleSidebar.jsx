@@ -46,10 +46,9 @@ const CANDIDATE_GROUPS = [
     label: 'AI',
     icon: Sparkles,
     items: [
-      { path: '/resume-analysis', label: 'Resume Analysis', icon: BarChart3, disabled: true, badge: 'Soon' },
-      { path: '/ats-score', label: 'ATS Score', icon: TrendingUp, disabled: true, badge: 'Soon' },
-      { path: '/skill-gap', label: 'Skill Gap', icon: Brain, disabled: true, badge: 'Soon' },
-      { path: '/career-recommendations', label: 'Career Recommendations', icon: Sparkles, disabled: true, badge: 'Soon' },
+      { path: '/resume-upload', label: 'Resume Analysis', icon: BarChart3 },
+      { path: '/job-match', label: 'Job Match', icon: Brain },
+      { path: '/career-insights', label: 'Career Insights', icon: TrendingUp },
     ],
   },
   {
@@ -103,8 +102,8 @@ const RECRUITER_GROUPS = [
     label: 'AI',
     icon: Sparkles,
     items: [
-      { path: '/hiring-insights', label: 'Hiring Insights', icon: Brain, disabled: true, badge: 'Soon' },
-      { path: '/job-match', label: 'Job Match', icon: Sparkles },
+      { path: '/job-match', label: 'Job Match', icon: Brain },
+      { path: '/rankings', label: 'Rankings', icon: Award },
     ],
   },
   {

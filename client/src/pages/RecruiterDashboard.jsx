@@ -25,18 +25,7 @@ import {
   BarChart3
 } from 'lucide-react'
 
-// ── Mock fallbacks (when API unavailable) ────────────────────────────────
-const MOCK_JOBS = [
-  { title: 'Frontend Developer', company: 'TechCorp', status: 'active' },
-  { title: 'Backend Engineer', company: 'DevStudio', status: 'active' },
-  { title: 'AI Researcher', company: 'BrainLabs', status: 'active' },
-]
 
-const MOCK_CANDIDATES = [
-  { name: 'Sandesh Pradhani', score: 92, skills: ['Python', 'React', 'MongoDB'] },
-  { name: 'Rahul Sharma', score: 84, skills: ['Java', 'NodeJS', 'Express'] },
-  { name: 'Aarav Mehta', score: 89, skills: ['Python', 'PyTorch', 'AWS'] },
-]
 
 function RecruiterDashboard() {
   const { user } = useContext(AuthContext)
@@ -204,17 +193,32 @@ function RecruiterDashboard() {
                   <span className="text-[10px] font-semibold text-blue-300 uppercase">Powered by IntelliHire Engine</span>
                 </div>
               </div>
+
               <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
-                <div className="bg-white/5 border border-white/10 p-3.5 rounded-2xl flex items-start gap-2.5">
-                  <div className="h-5 w-5 bg-blue-500/20 text-blue-300 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
-                  <p>Top 3 candidates have <strong>Python + React</strong> skills — highest demand profile this quarter.</p>
-                </div>
-                <div className="bg-white/5 border border-white/10 p-3.5 rounded-2xl flex items-start gap-2.5">
-                  <div className="h-5 w-5 bg-indigo-500/20 text-indigo-300 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
-                  <p><strong>Recommendation:</strong> Start screening the Frontend Developer applicants — 12 pending reviews.</p>
-                </div>
+                {applications.length === 0 ? (
+                  <div className="bg-white/5 border border-white/10 p-3.5 rounded-2xl flex items-start gap-2.5">
+                    <div className="h-5 w-5 bg-blue-500/20 text-blue-300 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
+                    <p>No application data yet. Run job matching to populate the pipeline.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-white/5 border border-white/10 p-3.5 rounded-2xl flex items-start gap-2.5">
+                      <div className="h-5 w-5 bg-blue-500/20 text-blue-300 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
+                      <p>
+                        Highest activity is now in <strong>{applications[0]?.status || 'Applied'}</strong> status.
+                      </p>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 p-3.5 rounded-2xl flex items-start gap-2.5">
+                      <div className="h-5 w-5 bg-indigo-500/20 text-indigo-300 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
+                      <p>
+                        Average match score across pipeline is <strong>{totalApps > 0 ? Math.round(applications.reduce((a, app) => a + (app.matchScore || 0), 0) / totalApps) : 0}%</strong>.
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
+
 
             {/* Recent Feedback */}
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">

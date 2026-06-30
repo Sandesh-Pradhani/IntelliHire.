@@ -9,6 +9,7 @@ import Jobs from '../pages/Jobs'
 import AcademicProfile from '../pages/AcademicProfile'
 import Dashboard from '../pages/Dashboard'
 import JobMatch from '../pages/JobMatch'
+import CareerInsights from '../pages/CareerInsights'
 
 /**
  * CandidateRoutes — All candidate-protected routes.
@@ -32,6 +33,7 @@ function CandidateRoutes() {
         <Route path="/academic-profile" element={<AcademicProfile />} />
         <Route path="/jobs" element={<Jobs action="browse" />} />
         <Route path="/job-match" element={<JobMatch />} />
+        <Route path="/career-insights" element={<CareerInsights />} />
       </Route>
     </Routes>
   )

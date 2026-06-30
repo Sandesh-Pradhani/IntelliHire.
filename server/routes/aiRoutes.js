@@ -9,6 +9,16 @@ const fs = require('fs')
 const pdf = require('pdf-parse')
 const router = express.Router()
 
+/**
+ * Helper: Call AI Engine and extract data from standard envelope.
+ */
+const callAiEngine = async (endpoint, payload) => {
+  const aiUrl = process.env.AI_ENGINE_URL || 'http://localhost:8000'
+  const response = await axios.post(`${aiUrl}${endpoint}`, payload)
+  // Phase 3: response.data may have { success, data, message, execution_time, model_used }
+  return response.data.data || response.data
+}
+
 /*
 UPLOAD ROUTE
 
@@ -42,6 +52,10 @@ router.post(
 
             let atsScore = 0
 
+            let atsBreakdown = null
+
+            let suggestions = []
+
             try {
 
                 /*
@@ -67,6 +81,7 @@ router.post(
 
                 /*
                 SEND TEXT TO AI
+                Phase 3: AI Engine now returns standard envelope { success, data, message, execution_time, model_used }
                 */
 
                 const response =
@@ -79,11 +94,20 @@ router.post(
                         }
                     )
 
+                // Phase 3: Extract from standard response envelope
+                const aiData = response.data.data || response.data
+
                 extractedSkills =
-                    response.data.skills || []
+                    aiData.skills || []
 
                 atsScore =
-                    response.data.ats_score || 0
+                    aiData.ats_score || 0
+
+                atsBreakdown =
+                    aiData.ats_breakdown || null
+
+                suggestions =
+                    aiData.suggestions || []
 
                 console.log(
                     'AI SUCCESS'
@@ -136,7 +160,11 @@ router.post(
                         resume.atsScore,
 
                     extractedSkills:
-                        resume.extractedSkills
+                        resume.extractedSkills,
+
+                    atsBreakdown,
+
+                    suggestions
                 }
             })
 
@@ -149,6 +177,166 @@ router.post(
                 message:
                     'Resume Upload Failed'
             })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/analyze-resume
+ * Phase 3: Direct proxy to AI Engine for resume text analysis.
+ * Returns skills + ATS score + breakdown + suggestions via standard envelope.
+ */
+router.post(
+    '/analyze-resume',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { resumeText } = req.body
+            if (!resumeText) {
+                return res.status(400).json({ message: 'resumeText is required' })
+            }
+
+            const data = await callAiEngine('/analyze-resume', { resumeText })
+
+            res.json({
+                success: true,
+                data: {
+                    skills: data.skills || [],
+                    ats_score: data.ats_score || 0,
+                    ats_breakdown: data.ats_breakdown || null,
+                    suggestions: data.suggestions || [],
+                    metrics: data.metrics || null,
+                },
+                message: 'Resume analyzed successfully',
+            })
+        } catch (error) {
+            console.error('analyze-resume proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/ats-breakdown
+ * Phase 3: Get detailed ATS breakdown with category scores and suggestions.
+ */
+router.post(
+    '/ats-breakdown',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { resumeText } = req.body
+            if (!resumeText) {
+                return res.status(400).json({ message: 'resumeText is required' })
+            }
+
+            // Call AI Engine's resume/ats-breakdown endpoint
+            const aiUrl = process.env.AI_ENGINE_URL || 'http://localhost:8000'
+            const response = await axios.post(`${aiUrl}/resume/ats-breakdown`, { resumeText })
+            const data = response.data.data || response.data
+
+            res.json({
+                success: true,
+                data,
+                message: 'ATS breakdown generated',
+            })
+        } catch (error) {
+            console.error('ats-breakdown proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/insights/recruiter
+ * Phase 3: Get recruiter AI insights (fit assessment, strengths, weaknesses, interview focus).
+ */
+router.post(
+    '/insights/recruiter',
+    authMiddleware,
+    requireRole('recruiter'),
+    async (req, res) => {
+        try {
+            const { resumeText, jobDescription } = req.body
+
+            const aiUrl = process.env.AI_ENGINE_URL || 'http://localhost:8000'
+            const response = await axios.post(`${aiUrl}/insights/recruiter`, {
+                resumeText: resumeText || '',
+                jobDescription: jobDescription || '',
+            })
+            const data = response.data.data || response.data
+
+            res.json({
+                success: true,
+                data,
+                message: 'Recruiter insights generated',
+            })
+        } catch (error) {
+            console.error('insights/recruiter proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/insights/career-recommendation
+ * Phase 3: Get career recommendations for candidates.
+ */
+router.post(
+    '/insights/career-recommendation',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { skills, experience_years, interests } = req.body
+
+            const aiUrl = process.env.AI_ENGINE_URL || 'http://localhost:8000'
+            const response = await axios.post(`${aiUrl}/insights/career-recommendation`, {
+                skills: skills || [],
+                experience_years: experience_years || null,
+                interests: interests || [],
+            })
+            const data = response.data.data || response.data
+
+            res.json({
+                success: true,
+                data,
+                message: 'Career recommendations generated',
+            })
+        } catch (error) {
+            console.error('insights/career-recommendation proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/insights/interview-questions
+ * Phase 3: Generate interview questions based on job description and skills.
+ */
+router.post(
+    '/insights/interview-questions',
+    authMiddleware,
+    requireRole('recruiter'),
+    async (req, res) => {
+        try {
+            const { jobDescription, skills, difficulty } = req.body
+
+            const aiUrl = process.env.AI_ENGINE_URL || 'http://localhost:8000'
+            const response = await axios.post(`${aiUrl}/insights/interview-questions`, {
+                jobDescription: jobDescription || '',
+                skills: skills || [],
+                difficulty: difficulty || 'medium',
+            })
+            const data = response.data.data || response.data
+
+            res.json({
+                success: true,
+                data,
+                message: 'Interview questions generated',
+            })
+        } catch (error) {
+            console.error('insights/interview-questions proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
         }
     }
 )
@@ -204,6 +392,7 @@ GET RANKINGS ROUTE
 
 Returns ranked candidates based on resumes and job matching
 Uses real MongoDB data + AI Engine ranking
+Phase 3: Uses enhanced ranking with unified formula
 */
 
 router.get(
@@ -246,6 +435,7 @@ router.get(
 
             try {
                 // Call AI Engine /rank-candidates with proper payload
+                // Phase 3: Response is wrapped in standard envelope
                 const response = await axios.post(
                     `${aiUrl}/rank-candidates`,
                     {
@@ -254,7 +444,9 @@ router.get(
                     }
                 )
 
-                rankings = response.data.rankings || []
+                // Phase 3: Extract from standard response envelope
+                const aiData = response.data.data || response.data
+                rankings = aiData.rankings || []
 
                 console.log('AI Ranking SUCCESS:', rankings.length, 'candidates ranked')
 

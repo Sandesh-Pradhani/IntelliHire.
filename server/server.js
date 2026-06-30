@@ -14,17 +14,17 @@ const jobRoutes = require('./routes/jobRoutes')
 const feedbackRoutes = require('./routes/feedbackRoutes')
 const recruiterRoutes = require('./routes/recruiterRoutes')
 const academicRoutes = require('./routes/academicRoutes')
+const portfolioRoutes = require('./routes/portfolioRoutes')
+const savedJobsRoutes = require('./routes/savedJobsRoutes')
+const notificationsRoutes = require('./routes/notificationsRoutes')
 
 connectDB()
 
 const app = express()
 
 app.use(
-
     cors({
-
         origin: process.env.CLIENT_URL,
-
         credentials: true
     })
 )
@@ -35,34 +35,26 @@ app.use(cors({
     "https://intelli-hire-chi.vercel.app"
   ],
   credentials: true
-}));
+}))
 
 app.use(express.json())
 
 app.use('/api/auth', authRoutes)
-
 app.use('/api/ai', aiRoutes)
-
 app.use('/api/resumes', resumeRoutes)
-
 app.use('/api/jobs', jobRoutes)
-app.use(
-
-    '/api/applications',
-
-    applicationRoutes
-)
-
+app.use('/api/applications', applicationRoutes)
 app.use('/api/feedback', feedbackRoutes)
 app.use('/api/recruiter', recruiterRoutes)
 app.use('/api/academic', academicRoutes)
+app.use('/api/portfolio', portfolioRoutes)
+app.use('/api/saved-jobs', savedJobsRoutes)
+app.use('/api/notifications', notificationsRoutes)
 
 app.get('/', (req, res) => {
-
     res.send('IntelliHire Backend Running')
 })
 
 app.listen(5000, () => {
-
     console.log('Server Running on Port 5000')
 })
