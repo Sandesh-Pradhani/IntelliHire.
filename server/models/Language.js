@@ -17,8 +17,8 @@ const LanguageSchema = new mongoose.Schema({
     },
     proficiency: {
         type: String,
-        enum: ['Basic', 'Conversational', 'Professional', 'Native'],
-        default: 'Basic'
+        enum: ['Beginner', 'Intermediate', 'Advanced', 'Native', 'Fluent'],
+        default: 'Intermediate'
     }
 }, {
     timestamps: true

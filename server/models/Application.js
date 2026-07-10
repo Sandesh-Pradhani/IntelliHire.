@@ -69,13 +69,22 @@ const ApplicationSchema = new mongoose.Schema({
             'Applied',
             'Screening',
             'Shortlisted',
+            'Assessment',
             'Interview',
-            'Selected',
+            'Technical Round',
+            'HR Round',
+            'Offered',
+            'Accepted',
             'Rejected',
             'Hired'
         ],
         default: 'Applied'
     },
+
+    rating: { type: Number, min: 1, max: 5 },
+    strengths: { type: [String], default: [] },
+    weaknesses: { type: [String], default: [] },
+    privateNotes: { type: String, default: '' },
 
     timeline: [{
         status: {

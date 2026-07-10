@@ -10,11 +10,13 @@ import AcademicProfile from '../pages/AcademicProfile'
 import Dashboard from '../pages/Dashboard'
 import JobMatch from '../pages/JobMatch'
 import CareerInsights from '../pages/CareerInsights'
+import Interviews from '../pages/Interviews'
+import Portfolio from '../pages/Portfolio'
+import Settings from '../pages/Settings'
+import Search from '../pages/Search'
+import Notifications from '../pages/Notifications'
+import Analytics from '../pages/Analytics'
 
-/**
- * CandidateRoutes — All candidate-protected routes.
- * Uses CandidateLayout (navbar + collapsible sidebar).
- */
 function CandidateRoutes() {
   return (
     <Routes>
@@ -34,6 +36,12 @@ function CandidateRoutes() {
         <Route path="/jobs" element={<Jobs action="browse" />} />
         <Route path="/job-match" element={<JobMatch />} />
         <Route path="/career-insights" element={<CareerInsights />} />
+        <Route path="/interviews" element={<Interviews />} />
+        <Route path="/portfolio" element={<Portfolio />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/search" element={<Search />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/analytics" element={<Analytics />} />
       </Route>
     </Routes>
   )

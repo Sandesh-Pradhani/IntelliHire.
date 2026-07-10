@@ -19,7 +19,8 @@ const CertificateSchema = new mongoose.Schema({
     issueDate: Date,
     expiryDate: Date,
     credentialId: String,
-    credentialUrl: String
+    credentialUrl: String,
+    certificateFile: { type: String, default: '' }
 }, {
     timestamps: true
 })

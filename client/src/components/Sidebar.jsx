@@ -11,7 +11,6 @@ import {
   FileCheck,
   Sparkles,
   GraduationCap,
-  UserPlus,
   FolderKanban,
   Code2,
   Settings,
@@ -24,10 +23,16 @@ import {
   Users,
   Plus,
   Brain,
-  TrendingUp
+  TrendingUp,
+  Calendar,
+  Search,
+  Bell,
+  StickyNote,
+  PieChart,
+  Shield,
+  BriefcaseBusiness
 } from 'lucide-react'
 
-// ─── Role-based Group Definitions ────────────────────────────────────────────
 const CANDIDATE_GROUPS = [
   {
     id: 'candidate-profile',
@@ -38,9 +43,7 @@ const CANDIDATE_GROUPS = [
       { path: '/resume-upload', label: 'Upload Resume', icon: UploadCloud },
       { path: '/resume-history', label: 'Resume History', icon: History },
       { path: '/academic-profile', label: 'Academic Profile', icon: GraduationCap },
-      { path: '/projects', label: 'Projects', icon: FolderKanban, disabled: true, badge: 'Soon' },
-      { path: '/certificates', label: 'Certificates', icon: Award, disabled: true, badge: 'Soon' },
-      { path: '/coding-profiles', label: 'Coding Profiles', icon: Code2, disabled: true, badge: 'Soon' },
+      { path: '/portfolio', label: 'Portfolio', icon: FolderKanban },
     ],
   },
   {
@@ -51,17 +54,29 @@ const CANDIDATE_GROUPS = [
     items: [
       { path: '/jobs', label: 'Browse Jobs', icon: Briefcase },
       { path: '/candidate/applications', label: 'My Applications', icon: FileCheck },
+      { path: '/interviews', label: 'My Interviews', icon: Calendar },
     ],
   },
   {
     id: 'candidate-ai',
-    label: 'AI',
+    label: 'AI Tools',
     icon: Sparkles,
     role: 'candidate',
     items: [
-      { path: '/ats-analysis', label: 'ATS Analysis', icon: BarChart3, disabled: true, badge: 'Soon' },
-      { path: '/job-match', label: 'Job Match', icon: Sparkles, disabled: true, badge: 'Soon' },
-      { path: '/skill-gap', label: 'Skill Gap Analysis', icon: Brain, disabled: true, badge: 'Soon' },
+      { path: '/job-match', label: 'Job Match', icon: Sparkles },
+      { path: '/career-insights', label: 'Career Insights', icon: Brain },
+      { path: '/search', label: 'Search Jobs', icon: Search },
+    ],
+  },
+  {
+    id: 'candidate-settings',
+    label: 'Account',
+    icon: Settings,
+    role: 'candidate',
+    items: [
+      { path: '/notifications', label: 'Notifications', icon: Bell },
+      { path: '/analytics', label: 'My Analytics', icon: PieChart },
+      { path: '/settings', label: 'Settings', icon: Settings },
     ],
   },
 ]
@@ -70,7 +85,7 @@ const RECRUITER_GROUPS = [
   {
     id: 'recruiter-jobs',
     label: 'Jobs',
-    icon: Briefcase,
+    icon: BriefcaseBusiness,
     role: 'recruiter',
     items: [
       { path: '/jobs/create', label: 'Create Job', icon: Plus },
@@ -85,22 +100,34 @@ const RECRUITER_GROUPS = [
     items: [
       { path: '/applications', label: 'Applications', icon: FileCheck },
       { path: '/rankings', label: 'Candidate Rankings', icon: Award },
-      { path: '/pipeline', label: 'Pipeline', icon: TrendingUp, disabled: true, badge: 'Soon' },
+      { path: '/interviews', label: 'Interviews', icon: Calendar },
+      { path: '/recruiter-notes', label: 'Notes & Feedback', icon: StickyNote },
     ],
   },
   {
-    id: 'recruiter-ai',
-    label: 'AI',
+    id: 'recruiter-tools',
+    label: 'Tools',
     icon: Sparkles,
     role: 'recruiter',
     items: [
-      { path: '/hiring-insights', label: 'Hiring Insights', icon: Brain, disabled: true, badge: 'Soon' },
       { path: '/job-match', label: 'Job Match', icon: Sparkles },
+      { path: '/search', label: 'Search', icon: Search },
+      { path: '/analytics', label: 'Analytics', icon: PieChart },
+    ],
+  },
+  {
+    id: 'recruiter-settings',
+    label: 'Account',
+    icon: Settings,
+    role: 'recruiter',
+    items: [
+      { path: '/portfolio', label: 'My Profile', icon: User },
+      { path: '/notifications', label: 'Notifications', icon: Bell },
+      { path: '/settings', label: 'Settings', icon: Settings },
     ],
   },
 ]
 
-// ─── Persisted expanded state ────────────────────────────────────────────────
 function getExpandedDefaults(groups) {
   try {
     const saved = localStorage.getItem('sidebar_expanded_groups')
@@ -115,7 +142,6 @@ function getExpandedDefaults(groups) {
   return {}
 }
 
-// ─── NavItem ─────────────────────────────────────────────────────────────────
 function NavItem({ item, currentPath, onClick }) {
   const Icon = item.icon
   const active = currentPath === item.path
@@ -156,14 +182,12 @@ function NavItem({ item, currentPath, onClick }) {
   )
 }
 
-// ─── SidebarGroup (collapsible accordion) ────────────────────────────────────
 function SidebarGroup({ group, currentPath, isOpen, onToggle, onClick }) {
   const Icon = group.icon
   const hasActiveChild = group.items.some((item) => item.path === currentPath)
 
   return (
     <div className="select-none">
-      {/* Group Header */}
       <button
         onClick={onToggle}
         className={`group flex w-full items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
@@ -183,7 +207,6 @@ function SidebarGroup({ group, currentPath, isOpen, onToggle, onClick }) {
         />
       </button>
 
-      {/* Collapsible Items */}
       <div
         className={`overflow-hidden transition-all duration-300 ease-in-out ${
           isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
@@ -198,18 +221,12 @@ function SidebarGroup({ group, currentPath, isOpen, onToggle, onClick }) {
               onClick={onClick}
             />
           ))}
-          {group.items.length === 0 && (
-            <p className="px-4 py-2 text-xs text-slate-600 italic">
-              Coming soon
-            </p>
-          )}
         </div>
       </div>
     </div>
   )
 }
 
-// ─── UserProfile ─────────────────────────────────────────────────────────────
 function UserProfile({ user, onLogout, closeMenu }) {
   const handleLogout = () => {
     if (closeMenu) closeMenu()
@@ -227,7 +244,7 @@ function UserProfile({ user, onLogout, closeMenu }) {
             {user.name}
           </h4>
           <p className="text-xs text-slate-500 truncate leading-tight mt-0.5">
-            {user.email || 'Recruiter Account'}
+            {user.email}
           </p>
         </div>
       </div>
@@ -242,13 +259,12 @@ function UserProfile({ user, onLogout, closeMenu }) {
   )
 }
 
-// ─── Sidebar (main export) ───────────────────────────────────────────────────
 export default function Sidebar() {
   const { user, logout } = useContext(AuthContext)
   const location = useLocation()
   const currentPath = location.pathname
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  // Determine which groups to show based on user role (defined before useState that uses it)
+
   const sidebarGroups = useMemo(() => {
     if (!user) return []
     return user.role === 'candidate' ? CANDIDATE_GROUPS : RECRUITER_GROUPS
@@ -256,13 +272,10 @@ export default function Sidebar() {
 
   const [expandedGroups, setExpandedGroups] = useState(() => getExpandedDefaults(sidebarGroups))
 
-  // Persist expanded state
   useEffect(() => {
     try {
       localStorage.setItem('sidebar_expanded_groups', JSON.stringify(expandedGroups))
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }, [expandedGroups])
 
   const toggleGroup = useCallback((groupId) => {
@@ -276,7 +289,6 @@ export default function Sidebar() {
     setMobileMenuOpen(false)
   }, [])
 
-  // Auto-expand group containing active route
   useEffect(() => {
     for (const group of sidebarGroups) {
       if (group.items.some((item) => item.path === currentPath)) {
@@ -289,10 +301,8 @@ export default function Sidebar() {
     }
   }, [currentPath, sidebarGroups])
 
-  // ── Shared sidebar content ──────────────────────────────────────────────
   const sidebarContent = (
     <>
-      {/* Dashboard (standalone, always visible) */}
       <div className="mb-2">
         <NavItem
           item={{
@@ -305,7 +315,6 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* Collapsible Groups */}
       <div className="space-y-0.5">
         {sidebarGroups.map((group) => (
           <SidebarGroup
@@ -318,12 +327,23 @@ export default function Sidebar() {
           />
         ))}
       </div>
+
+      <div className="mt-4 pt-4 border-t border-slate-800">
+        <NavItem
+          item={{
+            path: user?.role === 'admin' ? '/admin' : '/settings',
+            label: user?.role === 'admin' ? 'Admin Panel' : 'Settings',
+            icon: user?.role === 'admin' ? Shield : Settings
+          }}
+          currentPath={currentPath}
+          onClick={closeMobileMenu}
+        />
+      </div>
     </>
   )
 
   return (
     <>
-      {/* MOBILE TOGGLE BUTTON (fixed bottom-right) */}
       <div className="md:hidden fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -334,7 +354,6 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* MOBILE OVERLAY */}
       {mobileMenuOpen && (
         <div
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
@@ -343,9 +362,8 @@ export default function Sidebar() {
         />
       )}
 
-      {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex flex-col w-72 bg-slate-900 text-slate-300 fixed left-0 top-16 bottom-0 border-r border-slate-800 z-30 transition-all duration-300">
-        <div className="flex-1 flex flex-col justify-between p-6">
+        <div className="flex-1 flex flex-col justify-between p-6 overflow-y-auto">
           <div>
             <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
               Recruitment ATS
@@ -358,7 +376,6 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* MOBILE SIDEBAR (slide-in) */}
       <aside
         className={`fixed inset-y-0 left-0 w-72 bg-slate-900 text-slate-300 z-50 flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out md:hidden border-r border-slate-800 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
@@ -367,7 +384,7 @@ export default function Sidebar() {
       >
         <div>
           <div className="flex items-center justify-between mb-6">
-            <span className="text-xl font-bold text-blue-500">IntelliHire Menu</span>
+            <span className="text-xl font-bold text-blue-500">IntelliHire</span>
             <button
               onClick={closeMobileMenu}
               className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"

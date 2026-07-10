@@ -17,17 +17,21 @@ const academicRoutes = require('./routes/academicRoutes')
 const portfolioRoutes = require('./routes/portfolioRoutes')
 const savedJobsRoutes = require('./routes/savedJobsRoutes')
 const notificationsRoutes = require('./routes/notificationsRoutes')
+const interviewRoutes = require('./routes/interviewRoutes')
+const notesRoutes = require('./routes/notesRoutes')
+const companyRoutes = require('./routes/companyRoutes')
+const projectRoutes = require('./routes/projectRoutes')
+const certificateRoutes = require('./routes/certificateRoutes')
+const codingProfileRoutes = require('./routes/codingProfileRoutes')
+const searchRoutes = require('./routes/searchRoutes')
+const adminRoutes = require('./routes/adminRoutes')
+const analyticsRoutes = require('./routes/analyticsRoutes')
+const settingsRoutes = require('./routes/settingsRoutes')
+const emailRoutes = require('./routes/emailRoutes')
 
 connectDB()
 
 const app = express()
-
-app.use(
-    cors({
-        origin: process.env.CLIENT_URL,
-        credentials: true
-    })
-)
 
 app.use(cors({
   origin: [
@@ -50,6 +54,17 @@ app.use('/api/academic', academicRoutes)
 app.use('/api/portfolio', portfolioRoutes)
 app.use('/api/saved-jobs', savedJobsRoutes)
 app.use('/api/notifications', notificationsRoutes)
+app.use('/api/interviews', interviewRoutes)
+app.use('/api/notes', notesRoutes)
+app.use('/api/company', companyRoutes)
+app.use('/api/projects', projectRoutes)
+app.use('/api/certificates', certificateRoutes)
+app.use('/api/coding-profiles', codingProfileRoutes)
+app.use('/api/search', searchRoutes)
+app.use('/api/admin', adminRoutes)
+app.use('/api/analytics', analyticsRoutes)
+app.use('/api/settings', settingsRoutes)
+app.use('/api/email', emailRoutes)
 
 app.get('/', (req, res) => {
     res.send('IntelliHire Backend Running')

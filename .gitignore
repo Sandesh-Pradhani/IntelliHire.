@@ -14,7 +14,6 @@ venv/
 .env
 .antigravitycli
 .cd
-.qodo
 .clinerules
 .jetro
 .github
@@ -22,7 +21,7 @@ venv/
 .windsurfrules
 .mcp.json
 .agents/
-
+IntelliHire/
 # Build folders
 dist/
 build/

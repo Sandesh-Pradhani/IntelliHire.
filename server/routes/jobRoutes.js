@@ -134,4 +134,43 @@ router.delete('/delete/:id', authMiddleware, requireRole('recruiter'), async (re
     }
 })
 
+router.post('/clone/:id', authMiddleware, requireRole('recruiter'), async (req, res) => {
+    try {
+        const original = await Job.findById(req.params.id)
+        if (!original) return res.status(404).json({ message: 'Job not found' })
+        const cloned = await Job.create({
+            title: original.title,
+            company: original.company,
+            description: original.description,
+            requiredSkills: original.requiredSkills,
+            experience: original.experience,
+            location: original.location,
+            jobType: original.jobType,
+            salaryMin: original.salaryMin,
+            salaryMax: original.salaryMax,
+            postedBy: req.user.id,
+            status: 'draft',
+            applicantsCount: 0
+        })
+        res.status(201).json(cloned)
+    } catch (error) {
+        console.error('[Job Clone Error]:', error)
+        res.status(500).json({ message: 'Failed to clone job' })
+    }
+})
+
+router.patch('/publish/:id', authMiddleware, requireRole('recruiter'), async (req, res) => {
+    try {
+        const job = await Job.findById(req.params.id)
+        if (!job) return res.status(404).json({ message: 'Job not found' })
+        if (job.postedBy.toString() !== req.user.id) return res.status(403).json({ message: 'Access denied' })
+        job.status = 'active'
+        await job.save()
+        res.json(job)
+    } catch (error) {
+        console.error('[Job Publish Error]:', error)
+        res.status(500).json({ message: 'Failed to publish job' })
+    }
+})
+
 module.exports = router

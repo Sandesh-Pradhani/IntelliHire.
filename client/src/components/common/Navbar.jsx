@@ -1,12 +1,31 @@
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthContext } from '../../context/AuthContext'
 import { Sparkles, LogOut, LogIn, UserPlus, Bell, Moon, Sun } from 'lucide-react'
+import axios from 'axios'
 
 function Navbar() {
   const { user, logout } = useContext(AuthContext)
   const navigate = useNavigate()
   const [darkMode, setDarkMode] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    const fetchUnread = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/notifications/unread-count`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        setUnreadCount(data.count || 0)
+      } catch { /* ignore */ }
+    }
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 30000)
+    return () => clearInterval(interval)
+  }, [user])
 
   const handleLogout = () => {
     logout()
@@ -16,7 +35,6 @@ function Navbar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-[72px] bg-white/90 backdrop-blur-md border-b border-slate-200/80 transition-all duration-300">
       <div className="h-full flex items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Left: Logo */}
         <Link
           to={user ? (user.role === 'candidate' ? '/candidate/dashboard' : '/recruiter/dashboard') : '/'}
           className="flex items-center gap-2.5 group focus:outline-none shrink-0"
@@ -29,23 +47,26 @@ function Navbar() {
           </span>
         </Link>
 
-        {/* Right: Workspace / Notifications / Theme / Logout */}
         <div className="flex items-center gap-3">
           {user && (
             <>
-              {/* Workspace indicator */}
               <span className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-100 px-3.5 py-2 rounded-xl">
                 <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-                Workspace
+                {user.role === 'recruiter' ? 'Recruiter' : 'Candidate'} Workspace
               </span>
 
-              {/* Notifications placeholder */}
-              <button className="relative p-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-200">
+              <Link
+                to="/notifications"
+                className="relative p-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-200"
+              >
                 <Bell className="h-4.5 w-4.5" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-blue-500 rounded-full border-2 border-white" />
-              </button>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-blue-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 border-2 border-white shadow-sm">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
 
-              {/* Theme placeholder */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className="p-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-200"
@@ -53,7 +74,6 @@ function Navbar() {
                 {darkMode ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
               </button>
 
-              {/* Logout */}
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200 hover:border-rose-100 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98]"

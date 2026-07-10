@@ -24,7 +24,9 @@ const ProjectSchema = new mongoose.Schema({
     isOngoing: {
         type: Boolean,
         default: false
-    }
+    },
+    images: [{ type: String }],
+    featured: { type: Boolean, default: false }
 }, {
     timestamps: true
 })

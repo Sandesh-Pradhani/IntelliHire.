@@ -58,7 +58,7 @@ router.put('/withdraw/:id', authMiddleware, requireRole('candidate'), async (req
 router.put('/status/:id', authMiddleware, requireRole('recruiter'), async (req, res) => {
   try {
     const {status,note}=req.body;
-    const valid=['Applied','Screening','Shortlisted','Interview','Selected','Rejected','Hired'];
+    const valid=['Applied','Screening','Shortlisted','Assessment','Interview','Technical Round','HR Round','Offered','Accepted','Rejected','Hired'];
     if(!valid.includes(status)) return res.status(400).json({message:'Invalid'});
     const app=await Application.findById(req.params.id);
     if(!app) return res.status(404).json({message:'Not found'});
