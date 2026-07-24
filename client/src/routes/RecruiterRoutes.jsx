@@ -1,38 +1,41 @@
-import { Routes, Route } from 'react-router-dom'
-import RecruiterLayout from '../components/layouts/RecruiterLayout'
+import { Route } from 'react-router-dom'
+import ROUTES from '../constants/routes'
 import ProtectedRoute from '../components/ProtectedRoute'
-import RecruiterDashboard from '../pages/RecruiterDashboard'
-import Jobs from '../pages/Jobs'
-import Rankings from '../pages/Rankings'
-import Feedback from '../pages/Feedback'
+import RecruiterLayout from '../components/layouts/RecruiterLayout'
 import Applications from '../pages/Applications'
-import Dashboard from '../pages/Dashboard'
-import JobMatch from '../pages/JobMatch'
+import Feedback from '../pages/Feedback'
+import RecruiterJobMatch from '../pages/RecruiterJobMatch'
+import Jobs from '../pages/Jobs'
+import Portfolio from '../pages/Portfolio'
+import Rankings from '../pages/Rankings'
+import RecruiterDashboard from '../pages/RecruiterDashboard'
+import Settings from '../pages/Settings'
+import Notifications from '../pages/Notifications'
+import Analytics from '../pages/RecruiterAnalytics'
 
-/**
- * RecruiterRoutes — All recruiter-protected routes.
- * Uses RecruiterLayout (navbar + collapsible sidebar).
- */
 function RecruiterRoutes() {
   return (
-    <Routes>
-      <Route
-        element={
-          <ProtectedRoute requiredRole="recruiter">
-            <RecruiterLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
-        <Route path="/jobs/create" element={<Jobs action="create" />} />
-        <Route path="/jobs/manage" element={<Jobs action="manage" />} />
-        <Route path="/rankings" element={<Rankings />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/job-match" element={<JobMatch />} />
-        <Route path="/applications" element={<Applications />} />
-      </Route>
-    </Routes>
+    <Route
+      element={(
+        <ProtectedRoute requiredRole="recruiter">
+          <RecruiterLayout />
+        </ProtectedRoute>
+      )}
+    >
+      <Route path={ROUTES.RECRUITER.DASHBOARD} element={<RecruiterDashboard />} />
+      <Route path={ROUTES.RECRUITER.JOBS} element={<Jobs action="manage" />} />
+      <Route path={ROUTES.RECRUITER.JOB_CREATE} element={<Jobs action="create" />} />
+      <Route path={ROUTES.RECRUITER.JOB_MANAGE} element={<Jobs action="manage" />} />
+      <Route path={ROUTES.RECRUITER.CANDIDATES} element={<Rankings view="candidates" />} />
+      <Route path={ROUTES.RECRUITER.APPLICATIONS} element={<Applications />} />
+      <Route path={ROUTES.RECRUITER.RANKINGS} element={<Rankings view="rankings" />} />
+      <Route path={ROUTES.RECRUITER.JOB_MATCH} element={<RecruiterJobMatch />} />
+      <Route path={ROUTES.RECRUITER.PORTFOLIO} element={<Portfolio role="recruiter" section="overview" />} />
+      <Route path={ROUTES.RECRUITER.SETTINGS} element={<Settings role="recruiter" />} />
+      <Route path={ROUTES.RECRUITER.FEEDBACK} element={<Feedback />} />
+      <Route path={ROUTES.RECRUITER.NOTIFICATIONS} element={<Notifications />} />
+      <Route path={ROUTES.RECRUITER.ANALYTICS} element={<Analytics />} />
+    </Route>
   )
 }
 

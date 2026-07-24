@@ -480,4 +480,289 @@ router.get(
     }
 )
 
+/**
+ * POST /api/ai/recruiter/rank-candidates-enhanced
+ * Phase 4: Enhanced candidate ranking with explanations
+ */
+router.post(
+    '/recruiter/rank-candidates-enhanced',
+    authMiddleware,
+    requireRole('recruiter'),
+    async (req, res) => {
+        try {
+            const { jobDescription, candidates } = req.body
+            if (!candidates || !candidates.length) {
+                return res.status(400).json({ message: 'At least one candidate is required' })
+            }
+
+            const data = await callAiEngine('/recruiter/rank-candidates-enhanced', {
+                jobDescription: jobDescription || '',
+                candidates,
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Enhanced ranking generated',
+            })
+        } catch (error) {
+            console.error('rank-candidates-enhanced proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/recruiter/recommendations
+ * Phase 4: Get recruiter candidate recommendations (best/backup/reject)
+ */
+router.post(
+    '/recruiter/recommendations',
+    authMiddleware,
+    requireRole('recruiter'),
+    async (req, res) => {
+        try {
+            const { jobDescription, candidates, threshold_best, threshold_backup } = req.body
+            if (!candidates || !candidates.length) {
+                return res.status(400).json({ message: 'At least one candidate is required' })
+            }
+
+            const data = await callAiEngine('/recruiter/recommendations', {
+                jobDescription: jobDescription || '',
+                candidates,
+                threshold_best: threshold_best || 70,
+                threshold_backup: threshold_backup || 45,
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Recruiter recommendations generated',
+            })
+        } catch (error) {
+            console.error('recruiter/recommendations proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/recruiter/dashboard-analytics
+ * Phase 4: Get recruiter dashboard analytics
+ */
+router.post(
+    '/recruiter/dashboard-analytics',
+    authMiddleware,
+    requireRole('recruiter'),
+    async (req, res) => {
+        try {
+            const { candidates, jobs, resumes } = req.body
+
+            const data = await callAiEngine('/recruiter/dashboard-analytics', {
+                candidates: candidates || [],
+                jobs: jobs || [],
+                resumes: resumes || [],
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Dashboard analytics generated',
+            })
+        } catch (error) {
+            console.error('recruiter/dashboard-analytics proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/resume/suggestions
+ * Phase 4: Get resume improvement suggestions
+ */
+router.post(
+    '/resume/suggestions',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { resumeText, jobDescription } = req.body
+            if (!resumeText) {
+                return res.status(400).json({ message: 'resumeText is required' })
+            }
+
+            const data = await callAiEngine('/resume/suggestions', {
+                resumeText,
+                jobDescription: jobDescription || null,
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Resume suggestions generated',
+            })
+        } catch (error) {
+            console.error('resume/suggestions proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/resume/compare-versions
+ * Phase 4: Compare two resume versions
+ */
+router.post(
+    '/resume/compare-versions',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { version_a_text, version_b_text, version_a_name, version_b_name } = req.body
+            if (!version_a_text || !version_b_text) {
+                return res.status(400).json({ message: 'Both version texts are required' })
+            }
+
+            const data = await callAiEngine('/resume/compare-versions', {
+                version_a_text,
+                version_b_text,
+                version_a_name: version_a_name || 'Version A',
+                version_b_name: version_b_name || 'Version B',
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Resume versions compared successfully',
+            })
+        } catch (error) {
+            console.error('resume/compare-versions proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/candidate/job-recommendations
+ * Phase 4: Get personalized job recommendations for candidates
+ */
+router.post(
+    '/candidate/job-recommendations',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { candidate_skills, experience_years, interests, jobs } = req.body
+            if (!candidate_skills || !candidate_skills.length) {
+                return res.status(400).json({ message: 'At least one skill is required' })
+            }
+
+            const data = await callAiEngine('/candidate/job-recommendations', {
+                candidate_skills,
+                experience_years: experience_years || null,
+                interests: interests || [],
+                jobs: jobs || [],
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Job recommendations generated',
+            })
+        } catch (error) {
+            console.error('candidate/job-recommendations proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/skill-gap
+ * Phase 4: Enhanced skill gap analysis with learning roadmap
+ */
+router.post(
+    '/skill-gap',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { candidate_skills, required_skills } = req.body
+            if (!candidate_skills || !required_skills) {
+                return res.status(400).json({ message: 'candidate_skills and required_skills are required' })
+            }
+
+            const data = await callAiEngine('/skill-gap', {
+                candidate_skills,
+                required_skills,
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Skill gap analysis complete',
+            })
+        } catch (error) {
+            console.error('skill-gap proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/job-match-v2
+ * Phase 4: Semantic job matching using embeddings and cosine similarity
+ */
+router.post(
+    '/job-match-v2',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { resume, job } = req.body
+            if (!resume || !job) {
+                return res.status(400).json({ message: 'resume and job texts are required' })
+            }
+
+            const data = await callAiEngine('/job-match-v2', {
+                resume,
+                job,
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Semantic job match complete',
+            })
+        } catch (error) {
+            console.error('job-match-v2 proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
+ * POST /api/ai/resume/analyze-comprehensive
+ * Phase 4: Comprehensive resume analysis pipeline
+ */
+router.post(
+    '/resume/analyze-comprehensive',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { resumeText } = req.body
+            if (!resumeText) {
+                return res.status(400).json({ message: 'resumeText is required' })
+            }
+
+            const data = await callAiEngine('/resume/analyze-comprehensive', {
+                resumeText,
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Comprehensive resume analysis complete',
+            })
+        } catch (error) {
+            console.error('resume/analyze-comprehensive proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
 module.exports = router

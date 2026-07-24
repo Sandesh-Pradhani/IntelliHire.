@@ -1,66 +1,49 @@
-import { createContext, useState } from 'react'
-
-export const AuthContext = createContext()
+import { useMemo, useState } from 'react'
+import { AuthContext } from './authContext'
 
 function getStoredUser() {
-    const storedUser = localStorage.getItem('user')
+  const storedUser = localStorage.getItem('user')
 
-    if (!storedUser) {
-        return null
-    }
+  if (!storedUser) {
+    return null
+  }
 
-    try {
-        return JSON.parse(storedUser)
-    } catch {
-        localStorage.removeItem('user')
-        localStorage.removeItem('token')
-        return null
-    }
+  try {
+    return JSON.parse(storedUser)
+  } catch {
+    localStorage.removeItem('user')
+    localStorage.removeItem('token')
+    return null
+  }
 }
 
 function AuthProvider({ children }) {
+  const [user, setUser] = useState(getStoredUser)
+  const loading = false
 
-    /*
-    PERSIST LOGIN
+  const login = (userData, token) => {
+    localStorage.setItem('user', JSON.stringify(userData))
+    localStorage.setItem('token', token)
+    setUser(userData)
+  }
 
-    localStorage survives refresh.
-    */
+  const logout = () => {
+    localStorage.removeItem('user')
+    localStorage.removeItem('token')
+    setUser(null)
+  }
 
-    const [user, setUser] = useState(getStoredUser)
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      login,
+      logout,
+    }),
+    [user]
+  )
 
-    const login = (userData, token) => {
-
-        localStorage.setItem('user', JSON.stringify(userData))
-
-        localStorage.setItem('token', token)
-
-        setUser(userData)
-    }
-
-    const logout = () => {
-
-        localStorage.removeItem('user')
-
-        localStorage.removeItem('token')
-
-        setUser(null)
-    }
-
-    return (
-
-        <AuthContext.Provider
-
-            value={{
-                user,
-                login,
-                logout
-            }}
-        >
-
-            {children}
-
-        </AuthContext.Provider>
-    )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export default AuthProvider

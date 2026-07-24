@@ -160,4 +160,66 @@ router.post('/login', async (req, res) => {
     }
 })
 
+/*
+CHANGE PASSWORD
+*/
+const authMiddleware = require('../middleware/authMiddleware')
+
+router.put('/change-password', authMiddleware, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Current and new password are required' })
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters' })
+        }
+
+        const user = await User.findById(req.user.id)
+        if (!user) return res.status(404).json({ message: 'User not found' })
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password)
+        if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' })
+
+        user.password = await bcrypt.hash(newPassword, 10)
+        await user.save()
+
+        res.json({ message: 'Password changed successfully' })
+    } catch (error) {
+        console.error('[Change Password Error]:', error)
+        res.status(500).json({ message: 'Failed to change password' })
+    }
+})
+
+/*
+DELETE ACCOUNT
+*/
+router.delete('/delete-account', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id
+        const mongoose = require('mongoose')
+
+        await Promise.all([
+            User.findByIdAndDelete(userId),
+            require('../models/Resume').deleteMany({ userId }),
+            require('../models/Application').deleteMany({ candidateId: userId }),
+            require('../models/AcademicProfile').deleteMany({ candidateId: userId }),
+            require('../models/Project').deleteMany({ userId }),
+            require('../models/Certificate').deleteMany({ userId }),
+            require('../models/CodingProfile').deleteMany({ userId }),
+            require('../models/Experience').deleteMany({ userId }),
+            require('../models/Language').deleteMany({ userId }),
+            require('../models/PortfolioLink').deleteMany({ userId }),
+            require('../models/Notification').deleteMany({ userId }),
+            require('../models/Feedback').deleteMany({ user: userId }),
+            require('../models/SavedJob').deleteMany({ userId }),
+        ])
+
+        res.json({ message: 'Account deleted successfully' })
+    } catch (error) {
+        console.error('[Delete Account Error]:', error)
+        res.status(500).json({ message: 'Failed to delete account' })
+    }
+})
+
 module.exports = router

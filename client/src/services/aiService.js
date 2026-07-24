@@ -151,16 +151,122 @@ export const getRankings = async () => {
 /**
  * Match job description against resume
  */
-export const matchJob = async (job, resume, jobId = null, resumeId = null) => {
+export const matchJob = async (job, resume, jobId = null, resumeId = null, role = 'recruiter') => {
   try {
+    const endpoint = role === 'candidate'
+      ? `${API_BASE}/api/ai/match`
+      : `${API_BASE}/api/recruiter/match`
+
     const response = await axios.post(
-      `${API_BASE}/api/recruiter/match`,
+      endpoint,
       { job, resume, jobId, resumeId },
       { headers: authHeaders() }
     )
     return response.data
   } catch (error) {
     console.error('matchJob error:', error)
+    throw error
+  }
+}
+
+/**
+ * Phase 4: Get enhanced candidate ranking with explanations
+ */
+export const getEnhancedRanking = async (jobDescription, candidates) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/api/ai/recruiter/rank-candidates-enhanced`,
+      { jobDescription, candidates },
+      { headers: authHeaders() }
+    )
+    return response.data
+  } catch (error) {
+    console.error('getEnhancedRanking error:', error)
+    throw error
+  }
+}
+
+/**
+ * Phase 4: Get recruiter candidate recommendations (best/backup/reject)
+ */
+export const getRecruiterRecommendations = async (jobDescription, candidates, thresholdBest = 70, thresholdBackup = 45) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/api/ai/recruiter/recommendations`,
+      { jobDescription, candidates, threshold_best: thresholdBest, threshold_backup: thresholdBackup },
+      { headers: authHeaders() }
+    )
+    return response.data
+  } catch (error) {
+    console.error('getRecruiterRecommendations error:', error)
+    throw error
+  }
+}
+
+/**
+ * Phase 4: Get recruiter dashboard analytics
+ */
+export const getDashboardAnalytics = async (candidates = [], jobs = [], resumes = []) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/api/ai/recruiter/dashboard-analytics`,
+      { candidates, jobs, resumes },
+      { headers: authHeaders() }
+    )
+    return response.data
+  } catch (error) {
+    console.error('getDashboardAnalytics error:', error)
+    throw error
+  }
+}
+
+/**
+ * Phase 4: Get resume improvement suggestions
+ */
+export const getResumeSuggestions = async (resumeText, jobDescription = null) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/api/ai/resume/suggestions`,
+      { resumeText, jobDescription },
+      { headers: authHeaders() }
+    )
+    return response.data
+  } catch (error) {
+    console.error('getResumeSuggestions error:', error)
+    throw error
+  }
+}
+
+/**
+ * Phase 4: Compare two resume versions
+ */
+export const compareResumeVersions = async (versionAText, versionBText, versionAName = 'Version A', versionBName = 'Version B') => {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/api/ai/resume/compare-versions`,
+      { version_a_text: versionAText, version_b_text: versionBText, version_a_name: versionAName, version_b_name: versionBName },
+      { headers: authHeaders() }
+    )
+    return response.data
+  } catch (error) {
+    console.error('compareResumeVersions error:', error)
+    throw error
+  }
+}
+
+/**
+ * Phase 4: Get personalized job recommendations for candidates
+ */
+export const getJobRecommendations = async (candidateSkills, experienceYears = null, interests = [], jobs = []) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/api/ai/candidate/job-recommendations`,
+      { candidate_skills: candidateSkills, experience_years: experienceYears, interests, jobs },
+      { headers: authHeaders() }
+    )
+    return response.data
+  } catch (error) {
+    console.error('getJobRecommendations error:', error)
     throw error
   }
 }

@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import axios from 'axios'
+import { AlertTriangle, Award, BarChart3, CheckCircle, FileText, Lightbulb, Sparkles, Upload } from 'lucide-react'
+import resumeService from '../services/resume.service'
+import { normalizeArray } from '../utils/apiNormalizer'
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+]
+const MAX_SIZE_MB = 5
 
-import { Upload, FileText, CheckCircle, AlertTriangle, Lightbulb, BarChart3, TrendingUp, Award, Sparkles } from 'lucide-react'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-
-const ResumeUpload = () => {
+function ResumeUpload() {
   const [file, setFile] = useState(null)
   const [skills, setSkills] = useState([])
   const [loading, setLoading] = useState(false)
@@ -15,11 +19,8 @@ const ResumeUpload = () => {
   const [suggestions, setSuggestions] = useState([])
   const [showAtsDetails, setShowAtsDetails] = useState(false)
 
-  const ALLOWED_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']
-  const MAX_SIZE_MB = 10
-
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0]
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files?.[0]
     setError('')
     setSuccessMessage('')
     setAtsBreakdown(null)
@@ -48,7 +49,7 @@ const ResumeUpload = () => {
 
   const handleUpload = async () => {
     if (!file) {
-      setError('Please select a file')
+      setError('Please select a file.')
       return
     }
 
@@ -56,35 +57,22 @@ const ResumeUpload = () => {
     setError('')
     setSuccessMessage('')
 
-    const formData = new FormData()
-    formData.append('resume', file)
-
     try {
-      const token = localStorage.getItem('token')
-
-      const res = await axios.post(`${API_BASE}/api/ai/upload-resume`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`
-        },
-      })
-
-      const data = res.data.resume || res.data
-      setSkills(data.extractedSkills || data.skills || [])
-      setAtsBreakdown(data.atsBreakdown || null)
-      setSuggestions(data.suggestions || [])
+      const data = await resumeService.upload(file)
+      const resumeData = data.resume || data
+      setSkills(normalizeArray(resumeData.extractedSkills || resumeData.skills))
+      setAtsBreakdown(resumeData.atsBreakdown || null)
+      setSuggestions(normalizeArray(resumeData.suggestions))
       setFile(null)
       setSuccessMessage('Resume uploaded successfully!')
-
-      // If ATS breakdown is available, show details automatically
-      if (data.atsBreakdown) {
-        setShowAtsDetails(true)
-      }
+      setShowAtsDetails(Boolean(resumeData.atsBreakdown))
 
       const fileInput = document.getElementById('resume-input')
-      if (fileInput) fileInput.value = ''
+      if (fileInput) {
+        fileInput.value = ''
+      }
     } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Upload failed. Please try again.'
+      const message = err?.message || 'Upload failed. Please try again.'
       setError(message)
       console.error('Upload error:', err)
     } finally {
@@ -92,9 +80,6 @@ const ResumeUpload = () => {
     }
   }
 
-  /**
-   * ATS score badge color based on score
-   */
   const getScoreColor = (score) => {
     if (score >= 80) return 'text-emerald-600 bg-emerald-50 border-emerald-200'
     if (score >= 60) return 'text-blue-600 bg-blue-50 border-blue-200'
@@ -110,73 +95,68 @@ const ResumeUpload = () => {
   }
 
   return (
-    <div className="animate-fade-in pb-12">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+    <div className="pb-12 animate-fade-in">
+      <div className="mb-8 flex items-center gap-3">
+        <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600">
           <Upload className="h-5 w-5" />
         </div>
         <div>
           <h1 className="text-3xl font-bold text-slate-800">Upload Resume</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Upload your resume for AI-powered analysis and ATS scoring</p>
+          <p className="mt-0.5 text-sm text-slate-400">Upload your resume for AI-powered analysis and ATS scoring.</p>
         </div>
       </div>
 
-      {/* Upload Card */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 mb-8">
-        <div className="w-full max-w-lg mx-auto">
-          {/* File Input */}
-          <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center hover:border-blue-300 transition-colors">
-            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="mb-8 rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
+        <div className="mx-auto w-full max-w-lg">
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center transition-colors hover:border-blue-300">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
               <FileText className="h-7 w-7 text-blue-500" />
             </div>
-            <p className="text-sm font-semibold text-slate-700 mb-1">Drag and drop your resume here</p>
-            <p className="text-xs text-slate-400 mb-4">or click to browse (PDF, DOC, DOCX — max 10MB)</p>
+            <p className="mb-1 text-sm font-semibold text-slate-700">Drag and drop your resume here</p>
+            <p className="mb-4 text-xs text-slate-400">or click to browse (PDF, DOC, DOCX - max 10MB)</p>
             <input
               id="resume-input"
               type="file"
               accept=".pdf,.doc,.docx"
               onChange={handleFileChange}
               disabled={loading}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="block w-full cursor-pointer text-sm text-gray-500 file:mr-4 file:rounded-xl file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
             />
-            {file && (
+            {file ? (
               <p className="mt-3 text-sm text-slate-600">
                 Selected: <span className="font-medium text-blue-600">{file.name}</span>
-                <span className="text-slate-400 ml-2">({(file.size / 1024).toFixed(0)} KB)</span>
+                <span className="ml-2 text-slate-400">({(file.size / 1024).toFixed(0)} KB)</span>
               </p>
-            )}
+            ) : null}
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mt-4 p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-start gap-2.5">
-              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          {error ? (
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-700">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
-          )}
+          ) : null}
 
-          {/* Success Message */}
-          {successMessage && (
-            <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm flex items-start gap-2.5">
-              <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          {successMessage ? (
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-700">
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{successMessage}</span>
             </div>
-          )}
+          ) : null}
 
-          {/* Upload Button */}
           <button
+            type="button"
             onClick={handleUpload}
             disabled={!file || loading}
-            className={`mt-6 w-full px-6 py-3.5 rounded-xl text-white font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+            className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 font-semibold text-white transition-all duration-200 ${
               !file || loading
-                ? 'bg-blue-300 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200'
+                ? 'cursor-not-allowed bg-blue-300'
+                : 'bg-blue-600 shadow-lg shadow-blue-200 hover:bg-blue-700'
             }`}
           >
             {loading ? (
               <>
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
@@ -192,47 +172,40 @@ const ResumeUpload = () => {
         </div>
       </div>
 
-      {/* Results Section */}
-      {(skills.length > 0 || atsBreakdown) && (
+      {(skills.length > 0 || atsBreakdown) ? (
         <div className="space-y-6">
-          {/* Skills Badges */}
-          {skills.length > 0 && (
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-              <div className="flex items-center gap-2 mb-4">
+          {skills.length > 0 ? (
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
                 <Award className="h-5 w-5 text-blue-500" />
                 <h2 className="text-lg font-bold text-slate-800">Extracted Skills</h2>
-                <span className="text-xs font-semibold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full ml-2">
+                <span className="ml-2 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-400">
                   {skills.length} found
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {skills.map((skill, index) => (
-                  <span key={index} className="bg-blue-50 text-blue-700 border border-blue-100 text-sm font-medium px-3 py-1.5 rounded-xl">
+                  <span key={`${skill}-${index}`} className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700">
                     {skill}
                   </span>
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
 
-          {/* ATS Breakdown */}
-          {atsBreakdown && (
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
+          {atsBreakdown ? (
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-indigo-500" />
                   <h2 className="text-lg font-bold text-slate-800">ATS Score Breakdown</h2>
                 </div>
-                <button
-                  onClick={() => setShowAtsDetails(!showAtsDetails)}
-                  className="text-xs font-semibold text-blue-600 hover:underline"
-                >
+                <button type="button" onClick={() => setShowAtsDetails((value) => !value)} className="text-xs font-semibold text-blue-600 hover:underline">
                   {showAtsDetails ? 'Hide Details' : 'Show Details'}
                 </button>
               </div>
 
-              {/* Overall Score */}
-              <div className="flex items-center gap-4 mb-6 p-4 bg-slate-50 rounded-2xl">
+              <div className="mb-6 flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
                 <div className={`text-4xl font-extrabold ${getScoreColor(atsBreakdown.overall || 0).split(' ')[0]}`}>
                   {atsBreakdown.overall || 0}
                 </div>
@@ -242,59 +215,44 @@ const ResumeUpload = () => {
                 </div>
               </div>
 
-              {/* Category Breakdown */}
-              {showAtsDetails && atsBreakdown.breakdown && (
-                <div className="space-y-4 mb-6">
+              {showAtsDetails && atsBreakdown.breakdown ? (
+                <div className="mb-6 space-y-4">
                   {Object.entries(atsBreakdown.breakdown).map(([key, score]) => (
                     <div key={key}>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-sm font-semibold text-slate-700 capitalize">{key}</span>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <span className="text-sm font-semibold capitalize text-slate-700">{key}</span>
                         <span className={`text-sm font-bold ${getScoreColor(score || 0).split(' ')[0]}`}>
                           {score || 0}/100
                         </span>
                       </div>
-                      <div className="w-full bg-slate-100 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-500 ${getProgressColor(score || 0)}`}
-                          style={{ width: `${score || 0}%` }}
-                        />
+                      <div className="h-2 w-full rounded-full bg-slate-100">
+                        <div className={`h-2 rounded-full transition-all duration-500 ${getProgressColor(score || 0)}`} style={{ width: `${score || 0}%` }} />
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
 
-              {/* Metrics */}
-              {showAtsDetails && atsBreakdown.metrics && (
-                <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-slate-50 rounded-2xl">
-                  <div className="text-center">
-                    <p className="text-lg font-extrabold text-slate-700">{atsBreakdown.metrics.word_count || 0}</p>
-                    <p className="text-xs text-slate-400">Words</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-extrabold text-slate-700">{atsBreakdown.metrics.skill_count || 0}</p>
-                    <p className="text-xs text-slate-400">Skills</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-lg font-extrabold text-slate-700">{atsBreakdown.metrics.char_count || 0}</p>
-                    <p className="text-xs text-slate-400">Characters</p>
-                  </div>
+              {showAtsDetails && atsBreakdown.metrics ? (
+                <div className="grid grid-cols-3 gap-4 rounded-2xl bg-slate-50 p-4">
+                  <Metric label="Words" value={atsBreakdown.metrics.word_count || 0} />
+                  <Metric label="Skills" value={atsBreakdown.metrics.skill_count || 0} />
+                  <Metric label="Characters" value={atsBreakdown.metrics.char_count || 0} />
                 </div>
-              )}
+              ) : null}
             </div>
-          )}
+          ) : null}
 
-          {/* Suggestions */}
-          {suggestions.length > 0 && (
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-3xl p-6">
-              <div className="flex items-center gap-2 mb-4">
+          {suggestions.length > 0 ? (
+            <div className="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6">
+              <div className="mb-4 flex items-center gap-2">
                 <Lightbulb className="h-5 w-5 text-amber-600" />
                 <h2 className="text-lg font-bold text-slate-800">Suggestions to Improve</h2>
               </div>
               <ul className="space-y-3">
                 {suggestions.map((suggestion, index) => (
                   <li key={index} className="flex items-start gap-3 text-sm text-slate-700">
-                    <span className="h-5 w-5 bg-amber-200 text-amber-700 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[10px] font-bold text-amber-700">
                       {index + 1}
                     </span>
                     {suggestion}
@@ -302,19 +260,27 @@ const ResumeUpload = () => {
                 ))}
               </ul>
             </div>
-          )}
+          ) : null}
         </div>
-      )}
-
-      {/* Empty State */}
-      {!file && skills.length === 0 && !loading && !error && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="h-8 w-8 text-slate-300" />
+      ) : (
+        !file && !loading && !error ? (
+          <div className="py-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50">
+              <Sparkles className="h-8 w-8 text-slate-300" />
+            </div>
+            <p className="text-sm text-slate-400">Upload a resume to see AI-powered analysis.</p>
           </div>
-          <p className="text-sm text-slate-400">Upload a resume to see AI-powered analysis</p>
-        </div>
+        ) : null
       )}
+    </div>
+  )
+}
+
+function Metric({ label, value }) {
+  return (
+    <div className="text-center">
+      <p className="text-lg font-extrabold text-slate-700">{value}</p>
+      <p className="text-xs text-slate-400">{label}</p>
     </div>
   )
 }

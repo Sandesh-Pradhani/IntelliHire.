@@ -1,41 +1,44 @@
-import { Routes, Route } from 'react-router-dom'
-import CandidateLayout from '../components/layouts/CandidateLayout'
+import { Navigate, Route } from 'react-router-dom'
+import ROUTES from '../constants/routes'
 import ProtectedRoute from '../components/ProtectedRoute'
-import CandidateDashboard from '../pages/CandidateDashboard'
+import CandidateLayout from '../components/layouts/CandidateLayout'
 import CandidateApplications from '../pages/CandidateApplications'
-import ResumeUpload from '../pages/ResumeUpload'
-import ResumeHistory from '../pages/ResumeHistory'
-import Jobs from '../pages/Jobs'
-import AcademicProfile from '../pages/AcademicProfile'
-import Dashboard from '../pages/Dashboard'
-import JobMatch from '../pages/JobMatch'
+import CandidateDashboard from '../pages/CandidateDashboard'
 import CareerInsights from '../pages/CareerInsights'
+import CandidateJobMatch from '../pages/CandidateJobMatch'
+import Jobs from '../pages/Jobs'
+import Portfolio from '../pages/Portfolio'
+import ResumeUpload from '../pages/ResumeUpload'
+import Settings from '../pages/Settings'
+import Notifications from '../pages/Notifications'
+import Analytics from '../pages/CandidateAnalytics'
 
-/**
- * CandidateRoutes — All candidate-protected routes.
- * Uses CandidateLayout (navbar + collapsible sidebar).
- */
 function CandidateRoutes() {
   return (
-    <Routes>
-      <Route
-        element={
-          <ProtectedRoute requiredRole="candidate">
-            <CandidateLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/candidate/dashboard" element={<CandidateDashboard />} />
-        <Route path="/candidate/applications" element={<CandidateApplications />} />
-        <Route path="/resume-upload" element={<ResumeUpload />} />
-        <Route path="/resume-history" element={<ResumeHistory />} />
-        <Route path="/academic-profile" element={<AcademicProfile />} />
-        <Route path="/jobs" element={<Jobs action="browse" />} />
-        <Route path="/job-match" element={<JobMatch />} />
-        <Route path="/career-insights" element={<CareerInsights />} />
-      </Route>
-    </Routes>
+    <Route
+      element={(
+        <ProtectedRoute requiredRole="candidate">
+          <CandidateLayout />
+        </ProtectedRoute>
+      )}
+    >
+      <Route path={ROUTES.CANDIDATE.DASHBOARD} element={<CandidateDashboard />} />
+      <Route path={ROUTES.CANDIDATE.JOBS} element={<Jobs action="browse" />} />
+      <Route path={ROUTES.CANDIDATE.APPLICATIONS} element={<CandidateApplications />} />
+      <Route path={ROUTES.CANDIDATE.RESUME_ANALYSIS} element={<ResumeUpload />} />
+      <Route path={ROUTES.CANDIDATE.JOB_MATCH} element={<CandidateJobMatch />} />
+      <Route path={ROUTES.CANDIDATE.CAREER_INSIGHTS} element={<CareerInsights />} />
+      <Route path={ROUTES.CANDIDATE.PROFILE} element={<Navigate to={ROUTES.CANDIDATE.PORTFOLIO} replace />} />
+      <Route path={ROUTES.CANDIDATE.PORTFOLIO} element={<Portfolio role="candidate" section="overview" />} />
+      <Route path={ROUTES.CANDIDATE.PORTFOLIO_RESUME} element={<Portfolio role="candidate" section="resume" />} />
+      <Route path={ROUTES.CANDIDATE.PORTFOLIO_ACADEMIC} element={<Portfolio role="candidate" section="academic" />} />
+      <Route path={ROUTES.CANDIDATE.PORTFOLIO_PROJECTS} element={<Portfolio role="candidate" section="projects" />} />
+      <Route path={ROUTES.CANDIDATE.PORTFOLIO_CERTIFICATES} element={<Portfolio role="candidate" section="certificates" />} />
+      <Route path={ROUTES.CANDIDATE.PORTFOLIO_CODING_PROFILES} element={<Portfolio role="candidate" section="codingProfiles" />} />
+      <Route path={ROUTES.CANDIDATE.SETTINGS} element={<Settings role="candidate" />} />
+      <Route path={ROUTES.CANDIDATE.NOTIFICATIONS} element={<Notifications />} />
+      <Route path={ROUTES.CANDIDATE.ANALYTICS} element={<Analytics />} />
+    </Route>
   )
 }
 

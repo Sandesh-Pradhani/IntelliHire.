@@ -37,6 +37,9 @@ from app.routers import ranking as ranking_router
 from app.routers import insights as insights_router
 from app.routers import health as health_router
 from app.routers import tasks as tasks_router
+from app.routers import recruiter_ai as recruiter_ai_router
+from app.routers import resume_suggestions as resume_suggestions_router
+from app.routers import candidate_recommendations as candidate_recommendations_router
 from app.utils.exceptions import generic_exception_handler, http_exception_handler, validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException
@@ -126,3 +129,6 @@ app.include_router(matching_router.router)
 app.include_router(ranking_router.router)
 app.include_router(insights_router.router)
 app.include_router(tasks_router.router)
+app.include_router(recruiter_ai_router.router)
+app.include_router(resume_suggestions_router.router)
+app.include_router(candidate_recommendations_router.router)

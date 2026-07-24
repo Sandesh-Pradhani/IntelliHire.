@@ -5,7 +5,8 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
 
-import AuthProvider from './context/AuthContext'
+import AuthProvider from './context/AuthContext.jsx'
+import { SidebarProvider } from './context/SidebarContext.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
 
@@ -13,9 +14,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
     <BrowserRouter>
       <AuthProvider>
+        <SidebarProvider>
 
-        <App />
+          <App />
 
+        </SidebarProvider>
       </AuthProvider>
     </BrowserRouter>
 

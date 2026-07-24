@@ -1,21 +1,47 @@
-import { useContext, useEffect, useState, useMemo } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AuthContext } from '../context/AuthContext'
-import axios from 'axios'
 import {
-  FileText,
-  TrendingUp,
-  Briefcase,
-  UploadCloud,
   ArrowRight,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Clock3,
-  Sparkles,
   Award,
-  ChevronRight
+  Briefcase,
+  CheckCircle,
+  Clock,
+  Clock3,
+  FileText,
+  Sparkles,
+  TrendingUp,
+  XCircle,
 } from 'lucide-react'
+import ROUTES from '../constants/routes'
+import { AuthContext } from '../context/authContext'
+import candidateService from '../services/candidate.service'
+import { normalizeArray } from '../utils/apiNormalizer'
+
+const STATUS_ICONS = {
+  applied: Clock3,
+  pending: Clock3,
+  screening: FileText,
+  reviewing: FileText,
+  shortlisted: CheckCircle,
+  interview: CheckCircle,
+  rejected: XCircle,
+  hired: Award,
+  selected: Award,
+  accepted: Award,
+}
+
+const STATUS_COLORS = {
+  applied: 'bg-slate-50 text-slate-700 border-slate-200',
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  screening: 'bg-blue-50 text-blue-700 border-blue-200',
+  reviewing: 'bg-blue-50 text-blue-700 border-blue-200',
+  shortlisted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  interview: 'bg-purple-50 text-purple-700 border-purple-200',
+  rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+  hired: 'bg-violet-50 text-violet-700 border-violet-200',
+  selected: 'bg-violet-50 text-violet-700 border-violet-200',
+  accepted: 'bg-violet-50 text-violet-700 border-violet-200',
+}
 
 function CandidateDashboard() {
   const { user } = useContext(AuthContext)
@@ -23,237 +49,232 @@ function CandidateDashboard() {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const currentDate = useMemo(() => {
-    return new Date().toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    })
-  }, [])
+  const currentDate = useMemo(
+    () =>
+      new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+    []
+  )
 
   const greeting = useMemo(() => {
     if (!user?.name) return 'Welcome Back'
     const hour = new Date().getHours()
     const prefix = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
     return `${prefix}, ${user.name.split(' ')[0]}`
-  }, [user?.name])
+  }, [user])
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchData() {
       try {
-        const token = localStorage.getItem('token')
-        const headers = token ? { Authorization: `Bearer ${token}` } : {}
-
-        const [historyRes, appsRes] = await Promise.allSettled([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/ai/history`, { headers }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/applications/candidate`, { headers }),
+        const [resumesData, appsData] = await Promise.allSettled([
+          candidateService.getResumeHistory(),
+          candidateService.getApplications(),
         ])
 
-        if (historyRes.status === 'fulfilled') setResumes(historyRes.value.data || [])
-        if (appsRes.status === 'fulfilled') setApplications(appsRes.value.data || [])
-      } catch (err) {
-        console.error(err)
+        if (resumesData.status === 'fulfilled' && resumesData.value) {
+          setResumes(normalizeArray(resumesData.value))
+        }
+
+        if (appsData.status === 'fulfilled' && appsData.value) {
+          const apps = normalizeArray(appsData.value)
+          setApplications(apps.map((app) => ({
+            ...app,
+            status: typeof app.status === 'string' ? app.status.toLowerCase() : 'applied',
+          })))
+        }
+      } catch (error) {
+        console.error(error)
       } finally {
         setLoading(false)
       }
     }
+
     fetchData()
   }, [])
 
-  const STATUS_ICONS = {
-    pending: Clock3,
-    reviewing: FileText,
-    shortlisted: CheckCircle,
-    rejected: XCircle,
-    accepted: Award,
-  }
-
-  const STATUS_COLORS = {
-    pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    reviewing: 'bg-blue-50 text-blue-700 border-blue-200',
-    shortlisted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    rejected: 'bg-rose-50 text-rose-700 border-rose-200',
-    accepted: 'bg-purple-50 text-purple-700 border-purple-200',
-  }
-
   return (
     <main className="space-y-8 animate-fade-in pb-12">
-        {/* HERO */}
-        <section className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 text-blue-400 text-sm font-semibold tracking-wider uppercase mb-1">
-              <Sparkles className="h-4 w-4" />
-              Candidate Portal
-            </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
-              {greeting}
-            </h1>
-            <p className="mt-2 text-slate-300 text-sm sm:text-base flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-400" />
-              {currentDate}
-            </p>
-            <div className="flex flex-wrap gap-3 mt-6">
-              <Link
-                to="/resume-upload"
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-lg shadow-blue-500/20 transition-all duration-200"
-              >
-                <UploadCloud className="h-4.5 w-4.5" />
-                Upload Resume
-              </Link>
-              <Link
-                to="/jobs"
-                className="flex items-center gap-2 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-200 text-sm font-semibold px-5 py-3 rounded-2xl transition-all duration-200"
-              >
-                <Briefcase className="h-4.5 w-4.5" />
-                Browse Jobs
-              </Link>
-            </div>
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 p-6 text-white shadow-xl sm:p-8 md:p-10">
+        <div className="pointer-events-none absolute top-0 right-0 -mt-16 -mr-16 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="relative z-10">
+          <div className="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-blue-400">
+            <Sparkles className="h-4 w-4" />
+            Candidate Portal
           </div>
-        </section>
-
-        {/* KPI CARDS */}
-        <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-                <FileText className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-500">Resumes Uploaded</p>
-                <p className="text-2xl font-extrabold text-slate-800">{resumes.length || 0}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-                <Briefcase className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-500">Applications</p>
-                <p className="text-2xl font-extrabold text-slate-800">{applications.length || 0}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-violet-50 text-violet-600 rounded-xl">
-                <CheckCircle className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-500">Shortlisted</p>
-                <p className="text-2xl font-extrabold text-slate-800">
-                  {applications.filter(a => a.status === 'shortlisted' || a.status === 'accepted').length}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-500">Avg ATS Score</p>
-                <p className="text-2xl font-extrabold text-slate-800">
-                  {resumes.length > 0
-                    ? Math.round(resumes.reduce((a, r) => a + (r.atsScore || 0), 0) / resumes.length) + '%'
-                    : '--'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* APPLICATION STATUS */}
-        <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">My Applications</h3>
-              <p className="text-xs text-slate-400">Track your job application status</p>
-            </div>
+          <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">
+            {greeting}
+          </h1>
+          <p className="mt-2 flex items-center gap-2 text-sm text-slate-300 sm:text-base">
+            <Clock className="h-4 w-4 text-blue-400" />
+            {currentDate}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
             <Link
-              to="/candidate/applications"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline"
+              to={ROUTES.CANDIDATE.RESUME_ANALYSIS}
+              className="flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-200 hover:bg-blue-500"
             >
-              View all <ArrowRight className="h-3 w-3" />
+              <FileText className="h-4.5 w-4.5" />
+              Resume Analysis
+            </Link>
+            <Link
+              to={ROUTES.CANDIDATE.JOBS}
+              className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-800/80 px-5 py-3 text-sm font-semibold text-slate-200 transition-all duration-200 hover:bg-slate-800"
+            >
+              <Briefcase className="h-4.5 w-4.5" />
+              Browse Jobs
             </Link>
           </div>
+        </div>
+      </section>
 
-          {loading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />)}
-            </div>
-          ) : applications.length === 0 ? (
-            <div className="text-center py-10">
-              <Briefcase className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-500 font-medium">No applications yet</p>
-              <Link to="/jobs" className="text-blue-600 text-sm font-semibold hover:underline mt-1 inline-block">
-                Browse available jobs
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {applications.slice(0, 5).map((app) => {
-                const StatusIcon = STATUS_ICONS[app.status] || Clock3
-                const statusColor = STATUS_COLORS[app.status] || 'bg-slate-50 text-slate-700 border-slate-200'
-                return (
-                  <div key={app._id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                        <Briefcase className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">{app.jobTitle || 'Position'}</p>
-                        <p className="text-xs text-slate-400">{app.company || 'Company'}</p>
-                      </div>
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <Link to={ROUTES.CANDIDATE.PORTFOLIO_RESUME} className="group">
+          <Stat label="Resumes Uploaded" value={resumes.length} icon={FileText} tone="blue" />
+        </Link>
+        <Link to={ROUTES.CANDIDATE.APPLICATIONS} className="group">
+          <Stat label="Applications" value={applications.length} icon={Briefcase} tone="emerald" />
+        </Link>
+        <Link to={ROUTES.CANDIDATE.APPLICATIONS} className="group">
+          <Stat
+            label="Shortlisted"
+            value={applications.filter((application) => ['shortlisted', 'accepted', 'hired'].includes(application.status)).length}
+            icon={CheckCircle}
+            tone="violet"
+          />
+        </Link>
+        <Link to={ROUTES.CANDIDATE.ANALYTICS} className="group">
+          <Stat
+            label="Avg ATS Score"
+            value={resumes.length > 0 ? `${Math.round(resumes.reduce((sum, item) => sum + (item.atsScore || 0), 0) / resumes.length)}%` : '--'}
+            icon={TrendingUp}
+            tone="amber"
+          />
+        </Link>
+      </section>
+
+      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">My Applications</h3>
+            <p className="text-xs text-slate-400">Track your job application status</p>
+          </div>
+          <Link to={ROUTES.CANDIDATE.APPLICATIONS} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="h-16 rounded-xl bg-slate-100 animate-pulse" />
+            ))}
+          </div>
+        ) : applications.length === 0 ? (
+          <div className="py-10 text-center">
+            <Briefcase className="mx-auto mb-3 h-12 w-12 text-slate-300" />
+            <p className="font-medium text-slate-500">No applications yet</p>
+            <Link to={ROUTES.CANDIDATE.JOBS} className="mt-1 inline-block text-sm font-semibold text-blue-600 hover:underline">
+              Browse available jobs
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {applications.slice(0, 5).map((application) => {
+              const StatusIcon = STATUS_ICONS[application.status] || Clock3
+              const statusColor = STATUS_COLORS[application.status] || 'bg-slate-50 text-slate-700 border-slate-200'
+
+              return (
+                <Link key={application._id} to={ROUTES.CANDIDATE.APPLICATIONS} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-colors hover:bg-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
+                      <Briefcase className="h-4 w-4" />
                     </div>
-                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${statusColor}`}>
-                      <StatusIcon className="h-3.5 w-3.5" />
-                      {app.status ? app.status.charAt(0).toUpperCase() + app.status.slice(1) : 'Pending'}
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{application.jobTitle || 'Position'}</p>
+                      <p className="text-xs text-slate-400">{application.company || 'Company'}</p>
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </section>
+                  <div className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${statusColor}`}>
+                    <StatusIcon className="h-3.5 w-3.5" />
+                    {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
+      </section>
 
-        {/* RECENT RESUMES */}
-        <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">Recent Resumes</h3>
-              <p className="text-xs text-slate-400">Your uploaded resume history</p>
-            </div>
-            <Link
-              to="/resume-history"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline"
-            >
-              View history <ChevronRight className="h-3 w-3" />
+      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">Recent Resumes</h3>
+            <p className="text-xs text-slate-400">Your uploaded resume history</p>
+          </div>
+          <Link to={ROUTES.CANDIDATE.PORTFOLIO_RESUME} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+            View portfolio <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+
+        {resumes.length === 0 ? (
+          <div className="py-10 text-center">
+            <FileText className="mx-auto mb-3 h-12 w-12 text-slate-300" />
+            <p className="font-medium text-slate-500">No resumes uploaded yet</p>
+            <Link to={ROUTES.CANDIDATE.RESUME_ANALYSIS} className="mt-1 inline-block text-sm font-semibold text-blue-600 hover:underline">
+              Upload your first resume
             </Link>
           </div>
-
-          {resumes.slice(0, 3).map((res, idx) => (
-            <div key={idx} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
+        ) : (
+          resumes.slice(0, 3).map((resume) => (
+            <Link key={resume._id} to={ROUTES.CANDIDATE.PORTFOLIO_RESUME} className="flex items-center justify-between border-b border-slate-100 py-3 last:border-0 transition-colors hover:bg-slate-50 -mx-2 px-2 rounded-xl">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
                   <FileText className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-800 truncate max-w-[200px]">{res.filename}</p>
-                  <p className="text-xs text-slate-400">{new Date(res.createdAt).toLocaleDateString()}</p>
+                  <p className="max-w-[200px] truncate text-sm font-semibold text-slate-800">{resume.filename || resume.fileName || 'Resume'}</p>
+                  <p className="text-xs text-slate-400">{resume.createdAt ? new Date(resume.createdAt).toLocaleDateString() : ''}</p>
                 </div>
               </div>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                res.atsScore >= 85 ? 'bg-emerald-50 text-emerald-700' :
-                res.atsScore >= 70 ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'
+              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                resume.atsScore >= 85 ? 'bg-emerald-50 text-emerald-700' :
+                resume.atsScore >= 70 ? 'bg-blue-50 text-blue-700' :
+                'bg-slate-100 text-slate-500'
               }`}>
-                {res.atsScore || 0} ATS
+                {resume.atsScore || 0} ATS
               </span>
-            </div>
-          ))}
-        </section>
+            </Link>
+          ))
+        )}
+      </section>
     </main>
+  )
+}
+
+function Stat({ label, value, icon: Icon, tone }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+    violet: 'bg-violet-50 text-violet-600',
+    amber: 'bg-amber-50 text-amber-600',
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all group-hover:shadow-md group-hover:border-blue-200">
+      <div className="flex items-center gap-3">
+        <div className={`rounded-xl p-2.5 ${tones[tone]}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-500">{label}</p>
+          <p className="text-2xl font-extrabold text-slate-800">{value}</p>
+        </div>
+      </div>
+    </div>
   )
 }
 
