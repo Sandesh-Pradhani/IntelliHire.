@@ -18,6 +18,7 @@ import CandidateCopilot from '../pages/CandidateCopilot'
 import LearningRoadmap from '../pages/LearningRoadmap'
 import CodingProfile from '../pages/CodingProfile'
 import ProjectDetails from '../pages/ProjectDetails'
+import Certificates from '../pages/Certificates'
 
 function CandidateRoutes() {
   return (
@@ -44,7 +45,7 @@ function CandidateRoutes() {
       <Route path={ROUTES.CANDIDATE.PORTFOLIO_ACADEMIC} element={<Portfolio role="candidate" section="academic" />} />
       <Route path={ROUTES.CANDIDATE.PORTFOLIO_PROJECTS} element={<Portfolio role="candidate" section="projects" />} />
       <Route path={ROUTES.CANDIDATE.PORTFOLIO_PROJECT_DETAILS} element={<ProjectDetails />} />
-      <Route path={ROUTES.CANDIDATE.PORTFOLIO_CERTIFICATES} element={<Portfolio role="candidate" section="certificates" />} />
+      <Route path={ROUTES.CANDIDATE.PORTFOLIO_CERTIFICATES} element={<Certificates />} />
       <Route path={ROUTES.CANDIDATE.PORTFOLIO_CODING_PROFILES} element={<Portfolio role="candidate" section="codingProfiles" />} />
       <Route path={ROUTES.CANDIDATE.SETTINGS} element={<Settings role="candidate" />} />
       <Route path={ROUTES.CANDIDATE.NOTIFICATIONS} element={<Notifications />} />

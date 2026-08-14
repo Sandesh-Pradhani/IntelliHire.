@@ -24,12 +24,14 @@ import { getAcademicProfile } from '../services/academicService'
 import portfolioService from '../services/portfolio.service'
 import projectService from '../services/projectService'
 import codingProfileService from '../services/codingProfileService'
+import certificateService from '../services/certificateService'
 import { normalizeArray } from '../utils/apiNormalizer'
 import ProjectCard from '../components/ProjectCard'
 import ProjectForm from '../components/ProjectForm'
 import ProjectScoreCard from '../components/ProjectScoreCard'
 import PortfolioStats from '../components/PortfolioStats'
 import TechnologyBadge from '../components/TechnologyBadge'
+import CertificateVerificationBadge from '../components/CertificateVerificationBadge'
 
 const PLATFORMS = ['GitHub', 'LinkedIn', 'Portfolio', 'Other']
 const PROFICIENCY_LEVELS = ['Basic', 'Conversational', 'Professional', 'Native']
@@ -77,6 +79,7 @@ function CandidatePortfolio({ section }) {
   const [completion, setCompletion] = useState(null)
   const [portfolioStats, setPortfolioStats] = useState(null)
   const [selectedProject, setSelectedProject] = useState(null)
+  const [recruiterCertificates, setRecruiterCertificates] = useState([])
   const [showProjectForm, setShowProjectForm] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
   const [scoringProjectId, setScoringProjectId] = useState(null)
@@ -724,6 +727,18 @@ function RecruiterPortfolio() {
     return Array.from(techSet).sort()
   }, [projects])
 
+  const selectProject = async (project) => {
+    setSelectedProject(project)
+    setRecruiterCertificates([])
+    const candidateId = typeof project.userId === 'object' ? project.userId._id : project.userId
+    if (!candidateId) return
+    try {
+      setRecruiterCertificates(await certificateService.getCandidateCertificates(candidateId))
+    } catch (err) {
+      console.error('Failed to fetch candidate certificates:', err)
+    }
+  }
+
   return (
     <div className="space-y-6 pb-12 animate-fade-in">
       <div>
@@ -795,7 +810,7 @@ function RecruiterPortfolio() {
                 <ProjectCard
                   key={project._id}
                   project={project}
-                  onSelect={setSelectedProject}
+                  onSelect={selectProject}
                 />
               ))}
             </div>
@@ -849,6 +864,35 @@ function RecruiterPortfolio() {
                 </div>
               )}
               <ProjectScoreCard score={selectedProject.projectScore} />
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Award className="h-4 w-4 text-blue-600" />
+                  <h4 className="text-sm font-bold text-slate-800">Certificates</h4>
+                </div>
+                {recruiterCertificates.length > 0 ? (
+                  <div className="space-y-3">
+                    {recruiterCertificates.map((certificate) => (
+                      <div key={certificate._id} className="rounded-xl bg-white p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{certificate.name}</p>
+                            <p className="text-xs text-slate-500">{certificate.issuer}</p>
+                          </div>
+                          <CertificateVerificationBadge status={certificate.verificationStatus} />
+                        </div>
+                        {certificate.skills?.length > 0 && (
+                          <p className="mt-2 text-xs text-slate-500">Skills: {certificate.skills.join(', ')}</p>
+                        )}
+                        <p className="mt-1 text-xs font-semibold text-slate-600">
+                          Score: {certificate.certificateScore?.certificateScore || 0}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">No certificates available for this candidate.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>

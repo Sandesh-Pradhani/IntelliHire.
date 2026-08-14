@@ -21,6 +21,7 @@ import {
   BarChart2,
   MessageSquare,
   Code2,
+  Award,
 } from 'lucide-react'
 
 const CANDIDATE_MENU = [
@@ -53,6 +54,7 @@ const CANDIDATE_MENU = [
       { path: ROUTES.CANDIDATE.JOB_MATCH, label: 'Job Match', icon: Brain },
       { path: ROUTES.CANDIDATE.CAREER_INSIGHTS, label: 'Career Insights', icon: TrendingUp },
       { path: ROUTES.CANDIDATE.CODING_PROFILE, label: 'Coding Profile', icon: Code2 },
+      { path: ROUTES.CANDIDATE.PORTFOLIO_CERTIFICATES, label: 'Certificates', icon: Award },
     ],
   },
   {

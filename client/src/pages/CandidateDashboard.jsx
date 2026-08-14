@@ -19,6 +19,7 @@ import ROUTES from '../constants/routes'
 import { AuthContext } from '../context/authContext'
 import candidateService from '../services/candidate.service'
 import projectService from '../services/projectService'
+import certificateService from '../services/certificateService'
 import { normalizeArray } from '../utils/apiNormalizer'
 
 const STATUS_ICONS = {
@@ -52,6 +53,7 @@ function CandidateDashboard() {
   const [resumes, setResumes] = useState([])
   const [applications, setApplications] = useState([])
   const [projectStats, setProjectStats] = useState(null)
+  const [certificateStats, setCertificateStats] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const currentDate = useMemo(
@@ -75,10 +77,11 @@ function CandidateDashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [resumesData, appsData, statsData] = await Promise.allSettled([
+        const [resumesData, appsData, statsData, certificateStatsData] = await Promise.allSettled([
           candidateService.getResumeHistory(),
           candidateService.getApplications(),
           projectService.getPortfolioStats(),
+          certificateService.getStats(),
         ])
 
         if (resumesData.status === 'fulfilled' && resumesData.value) {
@@ -95,6 +98,10 @@ function CandidateDashboard() {
 
         if (statsData.status === 'fulfilled' && statsData.value) {
           setProjectStats(statsData.value)
+        }
+
+        if (certificateStatsData.status === 'fulfilled' && certificateStatsData.value) {
+          setCertificateStats(certificateStatsData.value)
         }
       } catch (error) {
         console.error(error)
@@ -148,7 +155,7 @@ function CandidateDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-6">
         <Link to={ROUTES.CANDIDATE.PORTFOLIO_RESUME} className="group">
           <Stat label="Resumes Uploaded" value={resumes.length} icon={FileText} tone="blue" />
         </Link>
@@ -177,6 +184,14 @@ function CandidateDashboard() {
             value={projectStats?.totalProjects || 0}
             icon={FolderKanban}
             tone="blue"
+          />
+        </Link>
+        <Link to={ROUTES.CANDIDATE.PORTFOLIO_CERTIFICATES} className="group">
+          <Stat
+            label="Certificates"
+            value={certificateStats?.totalCertificates || 0}
+            icon={Award}
+            tone="emerald"
           />
         </Link>
       </section>

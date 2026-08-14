@@ -230,16 +230,18 @@ def calculate_unified_candidate_score(
     academic_score: float,
     coding_score: float,
     project_score: float = 0,
+    certificate_score: float = 0,
 ) -> Dict[str, Any]:
     """
     Calculate the unified candidate score with coding and project integration.
 
-    Weights (V5.3 - updated with project score):
-    - ATS: 20%
-    - Semantic: 30%
-    - Academic: 15%
-    - Coding: 20%
-    - Projects: 15%
+    Weights (V5.4 - updated with certificate score):
+    - Semantic: 28%
+    - ATS: 18%
+    - Academic: 14%
+    - Coding: 18%
+    - Projects: 14%
+    - Certificates: 8%
 
     Args:
         ats_score: ATS compatibility score (0-100)
@@ -247,16 +249,18 @@ def calculate_unified_candidate_score(
         academic_score: Academic score (0-100)
         coding_score: Coding score (0-100)
         project_score: Project portfolio score (0-100)
+        certificate_score: Certificate profile contribution score (0-100)
 
     Returns:
         Dict with final score, breakdown, and recommendation
     """
     weights = {
-        "semantic": 0.30,
-        "ats": 0.20,
-        "academic": 0.15,
-        "coding": 0.20,
-        "projects": 0.15,
+        "semantic": 0.28,
+        "ats": 0.18,
+        "academic": 0.14,
+        "coding": 0.18,
+        "projects": 0.14,
+        "certificates": 0.08,
     }
 
     final_score = round(
@@ -265,11 +269,12 @@ def calculate_unified_candidate_score(
         + (academic_score * weights["academic"])
         + (coding_score * weights["coding"])
         + (project_score * weights["projects"])
+        + (certificate_score * weights["certificates"])
     )
 
     # Generate recommendation based on final score
     if final_score >= 85:
-        recommendation = "Excellent overall candidate. Strong across all evaluation dimensions including project portfolio."
+        recommendation = "Excellent overall candidate. Strong across all evaluation dimensions including projects and certificates."
     elif final_score >= 70:
         recommendation = "Strong candidate. Meets most requirements with good overall fit and project experience."
     elif final_score >= 50:
@@ -286,6 +291,7 @@ def calculate_unified_candidate_score(
             "academic": {"score": academic_score, "weight": weights["academic"]},
             "coding": {"score": coding_score, "weight": weights["coding"]},
             "projects": {"score": project_score, "weight": weights["projects"]},
+            "certificates": {"score": certificate_score, "weight": weights["certificates"]},
         },
         "weights_used": weights,
     }

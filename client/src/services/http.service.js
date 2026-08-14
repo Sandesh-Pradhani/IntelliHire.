@@ -116,6 +116,17 @@ class HttpService {
     }
   }
 
+  async putFormData(endpoint, formData) {
+    try {
+      const response = await axios.put(`${this.baseURL}${endpoint}`, formData, {
+        headers: createHeaders({ 'Content-Type': 'multipart/form-data' }),
+      })
+      return parseResponse(response)
+    } catch (error) {
+      throw parseError(error)
+    }
+  }
+
   async put(endpoint, body = {}) {
     try {
       const response = await axios.put(`${this.baseURL}${endpoint}`, body, {
