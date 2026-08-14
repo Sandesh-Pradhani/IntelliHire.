@@ -15,15 +15,26 @@ import {
   Trash2,
   UserCircle2,
   X,
+  Search,
+  Filter,
+  Star,
 } from 'lucide-react'
 import { AuthContext } from '../context/authContext.js'
 import { getAcademicProfile } from '../services/academicService'
 import portfolioService from '../services/portfolio.service'
+import projectService from '../services/projectService'
+import codingProfileService from '../services/codingProfileService'
 import { normalizeArray } from '../utils/apiNormalizer'
+import ProjectCard from '../components/ProjectCard'
+import ProjectForm from '../components/ProjectForm'
+import ProjectScoreCard from '../components/ProjectScoreCard'
+import PortfolioStats from '../components/PortfolioStats'
+import TechnologyBadge from '../components/TechnologyBadge'
 
 const PLATFORMS = ['GitHub', 'LinkedIn', 'Portfolio', 'Other']
 const PROFICIENCY_LEVELS = ['Basic', 'Conversational', 'Professional', 'Native']
 const CODING_PLATFORMS = ['LeetCode', 'HackerRank', 'CodeChef', 'Codeforces', 'GeeksforGeeks']
+const PROJECT_CATEGORIES = ['Web Development', 'Mobile Development', 'AI/ML', 'Data Science', 'DevOps', 'Backend', 'Frontend', 'Full Stack', 'Other']
 
 function Modal({ open, onClose, title, children }) {
   if (!open) return null
@@ -59,10 +70,16 @@ function CandidatePortfolio({ section }) {
   const [projects, setProjects] = useState([])
   const [certificates, setCertificates] = useState([])
   const [codingProfiles, setCodingProfiles] = useState([])
+  const [unifiedCodingProfile, setUnifiedCodingProfile] = useState(null)
   const [experiences, setExperiences] = useState([])
   const [languages, setLanguages] = useState([])
   const [links, setLinks] = useState([])
   const [completion, setCompletion] = useState(null)
+  const [portfolioStats, setPortfolioStats] = useState(null)
+  const [selectedProject, setSelectedProject] = useState(null)
+  const [showProjectForm, setShowProjectForm] = useState(false)
+  const [editingProject, setEditingProject] = useState(null)
+  const [scoringProjectId, setScoringProjectId] = useState(null)
 
   const [modal, setModal] = useState(null)
   const [formData, setFormData] = useState({})
@@ -83,10 +100,12 @@ function CandidatePortfolio({ section }) {
       try { setProjects(normalizeArray(await portfolioService.getProjects())) } catch {}
       try { setCertificates(normalizeArray(await portfolioService.getCertificates())) } catch {}
       try { setCodingProfiles(normalizeArray(await portfolioService.getCodingProfiles())) } catch {}
+      try { setUnifiedCodingProfile(await codingProfileService.getProfile()) } catch {}
       try { setExperiences(normalizeArray(await portfolioService.getExperience())) } catch {}
       try { setLanguages(normalizeArray(await portfolioService.getLanguages())) } catch {}
       try { setLinks(normalizeArray(await portfolioService.getLinks())) } catch {}
       try { setCompletion(await portfolioService.getCompletion()) } catch {}
+      try { setPortfolioStats(await projectService.getPortfolioStats()) } catch {}
     }
     fetchData()
   }, [])
@@ -124,6 +143,44 @@ function CandidatePortfolio({ section }) {
       listSetter((prev) => prev.filter((item) => item._id !== id))
     } catch (err) {
       console.error('Delete failed:', err)
+    }
+  }
+
+  const handleProjectSave = async (data) => {
+    if (editingProject) {
+      const updated = await projectService.updateProject(editingProject._id, data)
+      setProjects((prev) => prev.map((p) => (p._id === editingProject._id ? updated : p)))
+    } else {
+      const created = await projectService.createProject(data)
+      setProjects((prev) => [created, ...prev])
+    }
+    setShowProjectForm(false)
+    setEditingProject(null)
+    try { setPortfolioStats(await projectService.getPortfolioStats()) } catch {}
+  }
+
+  const handleProjectDelete = async (id) => {
+    try {
+      await projectService.deleteProject(id)
+      setProjects((prev) => prev.filter((p) => p._id !== id))
+      if (selectedProject?._id === id) setSelectedProject(null)
+      try { setPortfolioStats(await projectService.getPortfolioStats()) } catch {}
+    } catch (err) {
+      console.error('Delete failed:', err)
+    }
+  }
+
+  const handleProjectScore = async (projectId) => {
+    setScoringProjectId(projectId)
+    try {
+      const updated = await projectService.scoreProject(projectId)
+      setProjects((prev) => prev.map((p) => (p._id === projectId ? updated : p)))
+      if (selectedProject?._id === projectId) setSelectedProject(updated)
+      try { setPortfolioStats(await projectService.getPortfolioStats()) } catch {}
+    } catch (err) {
+      console.error('Score failed:', err)
+    } finally {
+      setScoringProjectId(null)
     }
   }
 
@@ -217,40 +274,43 @@ function CandidatePortfolio({ section }) {
       title: 'Projects',
       icon: FolderKanban,
       action: (
-        <button type="button" onClick={() => openModal('project')} className="flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
-          <Plus className="h-3 w-3" /> Add
+        <button type="button" onClick={() => { setEditingProject(null); setShowProjectForm(true) }} className="flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+          <Plus className="h-3 w-3" /> Add Project
         </button>
       ),
       body: projects.length > 0 ? (
-        <div className="space-y-3">
-          {projects.map((project) => (
-            <div key={project._id} className="rounded-2xl bg-slate-50 p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-bold text-slate-800">{project.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{project.description}</p>
-                  {project.technologies?.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {project.technologies.map((t, i) => (
-                        <span key={i} className="rounded-lg bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">{t}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mt-2 flex gap-3">
-                    {project.githubLink && <a href={project.githubLink} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-blue-600 hover:underline">GitHub</a>}
-                    {project.liveLink && <a href={project.liveLink} target="_blank" rel="noreferrer" className="text-[10px] font-semibold text-emerald-600 hover:underline">Live Demo</a>}
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <button type="button" onClick={() => openModal('project', project)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200"><Pencil className="h-3.5 w-3.5" /></button>
-                  <button type="button" onClick={() => handleDelete('project', portfolioService.deleteProject, project._id, setProjects)} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-100 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+        <div className="space-y-4">
+          <PortfolioStats stats={portfolioStats} loading={!portfolioStats} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => (
+              <div key={project._id} className="relative">
+                <ProjectCard
+                  project={project}
+                  onSelect={(p) => setSelectedProject(p)}
+                  onScore={() => handleProjectScore(project._id)}
+                />
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setEditingProject(project); setShowProjectForm(true) }}
+                    className="rounded-lg bg-white/90 p-1.5 text-slate-400 shadow-sm hover:bg-slate-100 hover:text-slate-600"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); if (confirm('Delete this project?')) handleProjectDelete(project._id) }}
+                    className="rounded-lg bg-white/90 p-1.5 text-slate-400 shadow-sm hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       ) : (
-        <EmptyItem icon={FolderKanban} text="No projects added yet." />
+        <EmptyItem icon={FolderKanban} text="No projects added yet. Click 'Add Project' to showcase your work." />
       ),
     },
     {
@@ -293,30 +353,56 @@ function CandidatePortfolio({ section }) {
           <Plus className="h-3 w-3" /> Add
         </button>
       ),
-      body: codingProfiles.length > 0 ? (
+      body: (
         <div className="space-y-3">
-          {codingProfiles.map((profile) => (
-            <div key={profile._id} className="flex items-start justify-between rounded-2xl bg-slate-50 p-4">
-              <div>
-                <p className="text-sm font-bold text-slate-800">{profile.platform}</p>
-                <p className="mt-1 text-xs text-slate-500">Username: {profile.username || 'N/A'}</p>
-                {profile.rating && <p className="text-xs text-slate-500">Rating: {profile.rating}</p>}
-                {profile.problemsSolved && <p className="text-xs text-slate-500">Problems Solved: {profile.problemsSolved}</p>}
-                {profile.profileUrl && (
-                  <a href={profile.profileUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:underline">
-                    <ExternalLink className="h-3 w-3" /> Profile
-                  </a>
-                )}
+          {unifiedCodingProfile && (
+            <div className="rounded-2xl bg-blue-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Unified Coding Profile</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">GitHub</p>
+                  <p className="text-sm font-bold text-slate-800">{unifiedCodingProfile.githubUsername || 'Not connected'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">LeetCode</p>
+                  <p className="text-sm font-bold text-slate-800">{unifiedCodingProfile.leetcodeUsername || 'Not connected'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">HackerRank</p>
+                  <p className="text-sm font-bold text-slate-800">{unifiedCodingProfile.hackerrankUsername || 'Not connected'}</p>
+                </div>
               </div>
-              <div className="flex gap-1">
-                <button type="button" onClick={() => openModal('codingProfile', profile)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200"><Pencil className="h-3.5 w-3.5" /></button>
-                <button type="button" onClick={() => handleDelete('codingProfile', portfolioService.deleteCodingProfile, profile._id, setCodingProfiles)} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-100 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
-              </div>
+              {unifiedCodingProfile.lastSynced && (
+                <p className="mt-2 text-[10px] text-slate-500">
+                  Last synced: {new Date(unifiedCodingProfile.lastSynced).toLocaleString()}
+                </p>
+              )}
             </div>
-          ))}
+          )}
+          {codingProfiles.length > 0 ? (
+            codingProfiles.map((profile) => (
+              <div key={profile._id} className="flex items-start justify-between rounded-2xl bg-slate-50 p-4">
+                <div>
+                  <p className="text-sm font-bold text-slate-800">{profile.platform}</p>
+                  <p className="mt-1 text-xs text-slate-500">Username: {profile.username || 'N/A'}</p>
+                  {profile.rating && <p className="text-xs text-slate-500">Rating: {profile.rating}</p>}
+                  {profile.problemsSolved && <p className="text-xs text-slate-500">Problems Solved: {profile.problemsSolved}</p>}
+                  {profile.profileUrl && (
+                    <a href={profile.profileUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:underline">
+                      <ExternalLink className="h-3 w-3" /> Profile
+                    </a>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <button type="button" onClick={() => openModal('codingProfile', profile)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => handleDelete('codingProfile', portfolioService.deleteCodingProfile, profile._id, setCodingProfiles)} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-100 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <EmptyItem icon={Code2} text="No coding profiles connected yet." />
+          )}
         </div>
-      ) : (
-        <EmptyItem icon={Code2} text="No coding profiles connected yet." />
       ),
     },
     {
@@ -411,7 +497,7 @@ function CandidatePortfolio({ section }) {
         <EmptyItem icon={LinkIcon} text="No portfolio links added yet." />
       ),
     },
-  ], [academic, resumes, projects, certificates, codingProfiles, experiences, languages, links, completionPercent, user])
+  ], [academic, resumes, projects, certificates, codingProfiles, unifiedCodingProfile, experiences, languages, links, completionPercent, user, portfolioStats])
 
   const orderedSections = section && section !== 'overview'
     ? [...sections.filter((item) => item.id === section), ...sections.filter((item) => item.id !== section)]
@@ -442,18 +528,84 @@ function CandidatePortfolio({ section }) {
         )
       })}
 
-      <Modal open={modal === 'project'} onClose={closeModal} title={editingId ? 'Edit Project' : 'Add Project'}>
-        <div className="space-y-3">
-          <input placeholder="Title" value={formData.title || ''} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
-          <textarea placeholder="Description" value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400 h-20 resize-none" />
-          <input placeholder="Technologies (comma separated)" value={(formData.technologies || []).join(', ')} onChange={(e) => setFormData({ ...formData, technologies: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
-          <input placeholder="GitHub Link" value={formData.githubLink || ''} onChange={(e) => setFormData({ ...formData, githubLink: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
-          <input placeholder="Live Demo Link" value={formData.liveLink || ''} onChange={(e) => setFormData({ ...formData, liveLink: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
-          <button type="button" onClick={() => handleSave('project', portfolioService.createProject, portfolioService.updateProject, setProjects)} className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-            {editingId ? 'Update' : 'Save'}
-          </button>
+      {/* Project Form Modal */}
+      {showProjectForm && (
+        <ProjectForm
+          project={editingProject}
+          onSave={handleProjectSave}
+          onClose={() => { setShowProjectForm(false); setEditingProject(null) }}
+        />
+      )}
+
+      {/* Project Detail Modal */}
+      {selectedProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setSelectedProject(null)} />
+          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl animate-fade-in max-h-[85vh] overflow-y-auto">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-800">{selectedProject.title}</h3>
+              <button type="button" onClick={() => setSelectedProject(null)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">{selectedProject.category || 'Other'}</span>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${selectedProject.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                  {selectedProject.status === 'in-progress' ? 'In Progress' : selectedProject.status}
+                </span>
+              </div>
+              {selectedProject.description && (
+                <p className="text-sm text-slate-600">{selectedProject.description}</p>
+              )}
+              {selectedProject.technologies?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedProject.technologies.map((tech, i) => (
+                    <TechnologyBadge key={i} name={tech} size="md" />
+                  ))}
+                </div>
+              )}
+              <div className="grid grid-cols-3 gap-3">
+                {selectedProject.duration && (
+                  <div className="rounded-xl bg-slate-50 p-3 text-center">
+                    <p className="text-[10px] text-slate-400">Duration</p>
+                    <p className="text-sm font-bold text-slate-800">{selectedProject.duration}</p>
+                  </div>
+                )}
+                {selectedProject.teamSize > 0 && (
+                  <div className="rounded-xl bg-slate-50 p-3 text-center">
+                    <p className="text-[10px] text-slate-400">Team Size</p>
+                    <p className="text-sm font-bold text-slate-800">{selectedProject.teamSize}</p>
+                  </div>
+                )}
+                {selectedProject.role && (
+                  <div className="rounded-xl bg-slate-50 p-3 text-center">
+                    <p className="text-[10px] text-slate-400">Role</p>
+                    <p className="text-sm font-bold text-slate-800">{selectedProject.role}</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {selectedProject.githubUrl && (
+                  <a href={selectedProject.githubUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200">
+                    <ExternalLink className="h-4 w-4" /> GitHub
+                  </a>
+                )}
+                {selectedProject.liveDemoUrl && (
+                  <a href={selectedProject.liveDemoUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-xl bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-200">
+                    <ExternalLink className="h-4 w-4" /> Live Demo
+                  </a>
+                )}
+              </div>
+              <ProjectScoreCard
+                score={selectedProject.projectScore}
+                loading={scoringProjectId === selectedProject._id}
+                onScore={() => handleProjectScore(selectedProject._id)}
+              />
+            </div>
+          </div>
         </div>
-      </Modal>
+      )}
 
       <Modal open={modal === 'certificate'} onClose={closeModal} title={editingId ? 'Edit Certificate' : 'Add Certificate'}>
         <div className="space-y-3">
@@ -536,74 +688,171 @@ function CandidatePortfolio({ section }) {
 
 function RecruiterPortfolio() {
   const { user } = useContext(AuthContext)
-  const [jobs, setJobs] = useState([])
-  const [applications, setApplications] = useState([])
-  const [feedbacks, setFeedbacks] = useState([])
+  const [projects, setProjects] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [filterTech, setFilterTech] = useState('')
+  const [filterCategory, setFilterCategory] = useState('')
+  const [selectedProject, setSelectedProject] = useState(null)
+  const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 })
+
+  const fetchProjects = async (page = 1) => {
+    setLoading(true)
+    try {
+      const params = { page, limit: 12 }
+      if (search) params.search = search
+      if (filterTech) params.technology = filterTech
+      if (filterCategory) params.category = filterCategory
+
+      const result = await projectService.getRecruiterProjects(params)
+      setProjects(result.projects || [])
+      setPagination(result.pagination || { page: 1, pages: 1, total: 0 })
+    } catch (err) {
+      console.error('Failed to fetch recruiter projects:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      const token = localStorage.getItem('token')
-      const headers = { Authorization: `Bearer ${token}` }
-      const [jobsResponse, applicationsResponse, feedbackResponse] = await Promise.allSettled([
-        axios.get(`${import.meta.env.VITE_API_URL}/api/jobs/all`),
-        axios.get(`${import.meta.env.VITE_API_URL}/api/applications/recruiter`, { headers }),
-        axios.get(`${import.meta.env.VITE_API_URL}/api/feedback`, { headers }),
-      ])
-      if (jobsResponse.status === 'fulfilled') setJobs(normalizeArray(jobsResponse.value.data?.jobs ?? jobsResponse.value.data))
-      if (applicationsResponse.status === 'fulfilled') setApplications(normalizeArray(applicationsResponse.value.data))
-      if (feedbackResponse.status === 'fulfilled') setFeedbacks(normalizeArray(feedbackResponse.value.data))
-    }
-    fetchData()
-  }, [])
+    fetchProjects()
+  }, [search, filterTech, filterCategory])
+
+  const allTechnologies = useMemo(() => {
+    const techSet = new Set()
+    projects.forEach((p) => (p.technologies || []).forEach((t) => techSet.add(t)))
+    return Array.from(techSet).sort()
+  }, [projects])
 
   return (
     <div className="space-y-6 pb-12 animate-fade-in">
       <div>
-        <h1 className="text-4xl font-bold text-slate-800">Portfolio</h1>
-        <p className="mt-2 text-slate-500">Recruiter profile, hiring activity, and feedback summary.</p>
+        <h1 className="text-4xl font-bold text-slate-800">Candidate Portfolios</h1>
+        <p className="mt-2 text-slate-500">Browse and evaluate candidate project portfolios with AI scoring.</p>
       </div>
 
       <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
-          <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600"><UserCircle2 className="h-5 w-5" /></div>
-          <h2 className="text-xl font-bold text-slate-800">Recruiter Profile</h2>
+          <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600"><Filter className="h-5 w-5" /></div>
+          <h2 className="text-xl font-bold text-slate-800">Filters</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Name</p>
-            <p className="mt-2 text-sm font-bold text-slate-800">{user?.name || 'Recruiter'}</p>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search projects..."
+              className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-blue-400"
+            />
           </div>
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</p>
-            <p className="mt-2 text-sm font-bold text-slate-800">{user?.email || 'Not available'}</p>
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Role</p>
-            <p className="mt-2 text-sm font-bold text-slate-800">Recruiter</p>
-          </div>
+          <select
+            value={filterTech}
+            onChange={(e) => setFilterTech(e.target.value)}
+            className="rounded-xl border border-slate-200 p-2.5 text-sm outline-none focus:border-blue-400"
+          >
+            <option value="">All Technologies</option>
+            {['React', 'FastAPI', 'Node.js', 'Python', 'MongoDB', 'AI', 'TypeScript', 'Docker', 'AWS'].map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="rounded-xl border border-slate-200 p-2.5 text-sm outline-none focus:border-blue-400"
+          >
+            <option value="">All Categories</option>
+            {PROJECT_CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
       </section>
 
       <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600"><FolderKanban className="h-5 w-5" /></div>
-          <h2 className="text-xl font-bold text-slate-800">Hiring Snapshot</h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Jobs</p>
-            <p className="mt-2 text-sm font-bold text-slate-800">{jobs.length}</p>
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Applications</p>
-            <p className="mt-2 text-sm font-bold text-slate-800">{applications.length}</p>
-          </div>
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Feedback</p>
-            <p className="mt-2 text-sm font-bold text-slate-800">{feedbacks.length}</p>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">Projects</h2>
+            <p className="text-xs text-slate-400">{pagination.total} project{pagination.total !== 1 ? 's' : ''} found</p>
           </div>
         </div>
+
+        {loading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-48 rounded-2xl bg-slate-100 animate-pulse" />
+            ))}
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="py-10 text-center">
+            <FolderKanban className="mx-auto mb-3 h-12 w-12 text-slate-300" />
+            <p className="font-medium text-slate-500">No projects match your filters</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {projects.map((project) => (
+                <ProjectCard
+                  key={project._id}
+                  project={project}
+                  onSelect={setSelectedProject}
+                />
+              ))}
+            </div>
+            {pagination.pages > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-2">
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => fetchProjects(page)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${page === pagination.page ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </section>
+
+      {/* Recruiter Project Detail Modal */}
+      {selectedProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setSelectedProject(null)} />
+          <div className="relative z-10 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl animate-fade-in max-h-[85vh] overflow-y-auto">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-800">{selectedProject.title}</h3>
+              <button type="button" onClick={() => setSelectedProject(null)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {typeof selectedProject.userId === 'object' && (
+                <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2">
+                  <UserCircle2 className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-semibold text-slate-800">{selectedProject.userId.name}</span>
+                  <span className="text-xs text-slate-500">{selectedProject.userId.email}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">{selectedProject.category || 'Other'}</span>
+              </div>
+              {selectedProject.description && (
+                <p className="text-sm text-slate-600">{selectedProject.description}</p>
+              )}
+              {selectedProject.technologies?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedProject.technologies.map((tech, i) => (
+                    <TechnologyBadge key={i} name={tech} size="md" />
+                  ))}
+                </div>
+              )}
+              <ProjectScoreCard score={selectedProject.projectScore} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

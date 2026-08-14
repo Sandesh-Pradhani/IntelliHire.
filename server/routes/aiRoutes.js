@@ -7,6 +7,7 @@ const Resume = require('../models/Resume')
 const Job = require('../models/Job')
 const fs = require('fs')
 const pdf = require('pdf-parse')
+const { recordCandidateMemory } = require('../services/candidateMemoryService')
 const router = express.Router()
 
 /**
@@ -143,6 +144,16 @@ router.post(
 
                     atsScore
                 })
+
+            await recordCandidateMemory({
+                candidateId: req.user.id,
+                event: 'resume_uploaded',
+                entityType: 'resume',
+                entityId: resume._id,
+                summary: `Uploaded resume: ${resume.fileName}`,
+                metadata: { atsScore: resume.atsScore, skills: resume.extractedSkills },
+                dedupeKey: `resume_uploaded:${resume._id}`,
+            })
 
             res.json({
 

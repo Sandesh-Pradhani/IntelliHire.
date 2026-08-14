@@ -59,6 +59,11 @@ const JobSchema = new mongoose.Schema({
         required: true
     },
 
+    organizationId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Organization'
+    },
+
     applicantsCount: {
         type: Number,
         default: 0

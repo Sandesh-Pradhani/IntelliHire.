@@ -2,8 +2,8 @@
  * Recruiter Sidebar Navigation Configuration
  *
  * Recruiter features only:
- * - Jobs (Create Job, Manage Jobs)
- * - Candidates (Applications, Candidate Rankings, Portfolio Viewer, Settings)
+ * - Jobs (Create Job, Manage Jobs, Analytics)
+ * - Candidates (Applications, Candidate Rankings)
  * - AI (Candidate Match)
  * - Communication (Feedback, Notifications)
  */
@@ -14,11 +14,12 @@ import {
   Users,
   FileCheck,
   Award,
-  TrendingUp,
   Brain,
+  Bot,
+  ClipboardCheck,
+  Building2,
   MessageSquare,
   Sparkles,
-  Settings,
   Bell,
   BarChart2,
 } from 'lucide-react'
@@ -31,6 +32,7 @@ const RECRUITER_MENU = [
     items: [
       { path: ROUTES.RECRUITER.JOB_CREATE, label: 'Create Job', icon: Plus },
       { path: ROUTES.RECRUITER.JOB_MANAGE, label: 'Manage Jobs', icon: Briefcase },
+      { path: ROUTES.RECRUITER.ANALYTICS, label: 'Analytics', icon: BarChart2 },
     ],
   },
   {
@@ -40,9 +42,6 @@ const RECRUITER_MENU = [
     items: [
       { path: ROUTES.RECRUITER.APPLICATIONS, label: 'Applications', icon: FileCheck },
       { path: ROUTES.RECRUITER.RANKINGS, label: 'Candidate Rankings', icon: Award },
-      { path: ROUTES.RECRUITER.PORTFOLIO, label: 'Portfolio Viewer', icon: TrendingUp },
-      { path: ROUTES.RECRUITER.ANALYTICS, label: 'Analytics', icon: BarChart2 },
-      { path: ROUTES.RECRUITER.SETTINGS, label: 'Settings', icon: Settings },
     ],
   },
   {
@@ -50,6 +49,9 @@ const RECRUITER_MENU = [
     label: 'AI',
     icon: Sparkles,
     items: [
+      { path: ROUTES.RECRUITER.COPILOT, label: 'Recruiter Copilot', icon: Bot },
+      { path: ROUTES.RECRUITER.INTERVIEW_INTELLIGENCE, label: 'Interview Intelligence', icon: ClipboardCheck },
+      { path: ROUTES.RECRUITER.COMPANY_INTELLIGENCE, label: 'Company Workspace', icon: Building2 },
       { path: ROUTES.RECRUITER.JOB_MATCH, label: 'Candidate Match', icon: Brain },
     ],
   },

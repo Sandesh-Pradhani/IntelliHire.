@@ -7,14 +7,18 @@ import {
   CheckCircle,
   Clock,
   Clock3,
+  Code2,
   FileText,
+  FolderKanban,
   Sparkles,
+  Star,
   TrendingUp,
   XCircle,
 } from 'lucide-react'
 import ROUTES from '../constants/routes'
 import { AuthContext } from '../context/authContext'
 import candidateService from '../services/candidate.service'
+import projectService from '../services/projectService'
 import { normalizeArray } from '../utils/apiNormalizer'
 
 const STATUS_ICONS = {
@@ -47,6 +51,7 @@ function CandidateDashboard() {
   const { user } = useContext(AuthContext)
   const [resumes, setResumes] = useState([])
   const [applications, setApplications] = useState([])
+  const [projectStats, setProjectStats] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const currentDate = useMemo(
@@ -70,9 +75,10 @@ function CandidateDashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [resumesData, appsData] = await Promise.allSettled([
+        const [resumesData, appsData, statsData] = await Promise.allSettled([
           candidateService.getResumeHistory(),
           candidateService.getApplications(),
+          projectService.getPortfolioStats(),
         ])
 
         if (resumesData.status === 'fulfilled' && resumesData.value) {
@@ -85,6 +91,10 @@ function CandidateDashboard() {
             ...app,
             status: typeof app.status === 'string' ? app.status.toLowerCase() : 'applied',
           })))
+        }
+
+        if (statsData.status === 'fulfilled' && statsData.value) {
+          setProjectStats(statsData.value)
         }
       } catch (error) {
         console.error(error)
@@ -114,6 +124,13 @@ function CandidateDashboard() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
+              to={ROUTES.CANDIDATE.DIGITAL_TWIN}
+              className="flex items-center gap-2 rounded-2xl border border-cyan-400/30 bg-cyan-400/10 px-5 py-3 text-sm font-semibold text-cyan-100 transition-all duration-200 hover:bg-cyan-400/20"
+            >
+              <Sparkles className="h-4.5 w-4.5" />
+              My Digital Twin
+            </Link>
+            <Link
               to={ROUTES.CANDIDATE.RESUME_ANALYSIS}
               className="flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-200 hover:bg-blue-500"
             >
@@ -131,7 +148,7 @@ function CandidateDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
         <Link to={ROUTES.CANDIDATE.PORTFOLIO_RESUME} className="group">
           <Stat label="Resumes Uploaded" value={resumes.length} icon={FileText} tone="blue" />
         </Link>
@@ -154,6 +171,61 @@ function CandidateDashboard() {
             tone="amber"
           />
         </Link>
+        <Link to={ROUTES.CANDIDATE.PORTFOLIO_PROJECTS} className="group">
+          <Stat
+            label="Projects"
+            value={projectStats?.totalProjects || 0}
+            icon={FolderKanban}
+            tone="blue"
+          />
+        </Link>
+      </section>
+
+      {/* Portfolio Widget */}
+      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">Project Portfolio</h3>
+            <p className="text-xs text-slate-400">Showcase your projects with AI scoring</p>
+          </div>
+          <Link to={ROUTES.CANDIDATE.PORTFOLIO_PROJECTS} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+
+        {projectStats ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl bg-blue-50 p-4">
+              <div className="flex items-center gap-2">
+                <FolderKanban className="h-4 w-4 text-blue-600" />
+                <p className="text-xs font-semibold text-blue-600">Total Projects</p>
+              </div>
+              <p className="mt-2 text-2xl font-extrabold text-slate-800">{projectStats.totalProjects}</p>
+            </div>
+            <div className="rounded-2xl bg-amber-50 p-4">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-amber-600" />
+                <p className="text-xs font-semibold text-amber-600">Avg Score</p>
+              </div>
+              <p className="mt-2 text-2xl font-extrabold text-slate-800">{projectStats.averageScore || '--'}</p>
+            </div>
+            <div className="rounded-2xl bg-violet-50 p-4">
+              <div className="flex items-center gap-2">
+                <Code2 className="h-4 w-4 text-violet-600" />
+                <p className="text-xs font-semibold text-violet-600">Technologies</p>
+              </div>
+              <p className="mt-2 text-2xl font-extrabold text-slate-800">{projectStats.technologiesUsed?.length || 0}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="py-6 text-center">
+            <FolderKanban className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+            <p className="text-sm font-medium text-slate-500">No projects yet</p>
+            <Link to={ROUTES.CANDIDATE.PORTFOLIO_PROJECTS} className="mt-1 inline-block text-sm font-semibold text-blue-600 hover:underline">
+              Add your first project
+            </Link>
+          </div>
+        )}
       </section>
 
       <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">

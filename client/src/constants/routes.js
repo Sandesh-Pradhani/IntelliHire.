@@ -9,6 +9,10 @@ const ROUTES = {
   CANDIDATE: {
     ROOT: CANDIDATE_BASE,
     DASHBOARD: `${CANDIDATE_BASE}/dashboard`,
+    CODING_PROFILE: `${CANDIDATE_BASE}/coding-profile`,
+    DIGITAL_TWIN: `${CANDIDATE_BASE}/digital-twin`,
+    COPILOT: `${CANDIDATE_BASE}/ai-coach`,
+    LEARNING_ROADMAP: `${CANDIDATE_BASE}/learning-roadmap`,
     JOBS: `${CANDIDATE_BASE}/jobs`,
     APPLICATIONS: `${CANDIDATE_BASE}/applications`,
     PROFILE: `${CANDIDATE_BASE}/profile`,
@@ -16,6 +20,7 @@ const ROUTES = {
     PORTFOLIO_RESUME: `${CANDIDATE_BASE}/portfolio/resume`,
     PORTFOLIO_ACADEMIC: `${CANDIDATE_BASE}/portfolio/academic`,
     PORTFOLIO_PROJECTS: `${CANDIDATE_BASE}/portfolio/projects`,
+    PORTFOLIO_PROJECT_DETAILS: `${CANDIDATE_BASE}/portfolio/projects/:id`,
     PORTFOLIO_CERTIFICATES: `${CANDIDATE_BASE}/portfolio/certificates`,
     PORTFOLIO_CODING_PROFILES: `${CANDIDATE_BASE}/portfolio/coding-profiles`,
     SETTINGS: `${CANDIDATE_BASE}/settings`,
@@ -23,13 +28,16 @@ const ROUTES = {
     CAREER_INSIGHTS: `${CANDIDATE_BASE}/career-insights`,
     JOB_MATCH: `${CANDIDATE_BASE}/job-match`,
     NOTIFICATIONS: `${CANDIDATE_BASE}/notifications`,
+    FEEDBACK: `${CANDIDATE_BASE}/feedback`,
     ANALYTICS: `${CANDIDATE_BASE}/analytics`,
-    SEARCH: `/search`,
   },
 
   RECRUITER: {
     ROOT: RECRUITER_BASE,
     DASHBOARD: `${RECRUITER_BASE}/dashboard`,
+    COPILOT: `${RECRUITER_BASE}/ai-copilot`,
+    INTERVIEW_INTELLIGENCE: `${RECRUITER_BASE}/interview-intelligence`,
+    COMPANY_INTELLIGENCE: `${RECRUITER_BASE}/company`,
     JOBS: `${RECRUITER_BASE}/jobs`,
     JOB_CREATE: `${RECRUITER_BASE}/jobs/create`,
     JOB_MANAGE: `${RECRUITER_BASE}/jobs/manage`,
@@ -42,7 +50,6 @@ const ROUTES = {
     FEEDBACK: `${RECRUITER_BASE}/feedback`,
     NOTIFICATIONS: `${RECRUITER_BASE}/notifications`,
     ANALYTICS: `${RECRUITER_BASE}/analytics`,
-    SEARCH: `/search`,
   },
 }
 

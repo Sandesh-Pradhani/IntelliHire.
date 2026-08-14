@@ -1,6 +1,6 @@
 import { useContext, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bell, Eye, Key, LogOut, Moon, RefreshCcw, Settings as SettingsIcon, ShieldCheck, Trash2 } from 'lucide-react'
+import { Bell, Eye, Key, LogOut, RefreshCcw, Settings as SettingsIcon, ShieldCheck, Trash2 } from 'lucide-react'
 import { AuthContext } from '../context/authContext.js'
 import { getDashboardRoute, getPortfolioRoute } from '../constants/routes'
 import http from '../services/http.service'

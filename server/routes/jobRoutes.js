@@ -3,6 +3,7 @@ const express = require('express')
 const Job = require('../models/Job')
 const authMiddleware = require('../middleware/authMiddleware')
 const { requireRole } = require('../middleware/roleMiddleware')
+const Organization = require('../models/Organization')
 
 const router = express.Router()
 
@@ -12,9 +13,11 @@ router.post(
     requireRole('recruiter'),
     async (req, res) => {
     try {
+        const organization = await Organization.findOne({ 'members.userId': req.user.id, 'members.active': true }).select('_id').lean()
         const job = await Job.create({
             ...req.body,
-            postedBy: req.user.id
+            postedBy: req.user.id,
+            organizationId: organization?._id
         })
         res.status(201).json(job)
     } catch (error) {
@@ -58,6 +61,17 @@ router.get('/all', async (req, res) => {
     }
 })
 
+// Keep this before /:id so Express does not treat "my-jobs" as an ObjectId.
+router.get('/my-jobs', authMiddleware, requireRole('recruiter'), async (req, res) => {
+    try {
+        const jobs = await Job.find({ postedBy: req.user.id }).sort({ createdAt: -1 })
+        res.json(jobs)
+    } catch (error) {
+        console.error('[My Jobs Fetch Error]:', error)
+        res.status(500).json({ message: 'Failed to fetch your jobs' })
+    }
+})
+
 router.get('/:id', async (req, res) => {
     try {
         const job = await Job.findById(req.params.id)
@@ -66,16 +80,6 @@ router.get('/:id', async (req, res) => {
     } catch (error) {
         console.error('[Job Fetch Error]:', error)
         res.status(500).json({ message: 'Failed to fetch job' })
-    }
-})
-
-router.get('/my-jobs', authMiddleware, requireRole('recruiter'), async (req, res) => {
-    try {
-        const jobs = await Job.find({ postedBy: req.user.id }).sort({ createdAt: -1 })
-        res.json(jobs)
-    } catch (error) {
-        console.error('[My Jobs Fetch Error]:', error)
-        res.status(500).json({ message: 'Failed to fetch your jobs' })
     }
 })
 

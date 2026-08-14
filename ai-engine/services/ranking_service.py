@@ -31,6 +31,7 @@ def calculate_unified_ranking(
     experience_years: Optional[float] = None,
     project_count: Optional[int] = None,
     education_level: Optional[str] = None,
+    coding_score: Optional[float] = None,
     weights: Optional[dict] = None,
 ) -> dict:
     """
@@ -42,6 +43,7 @@ def calculate_unified_ranking(
         experience_years: Years of relevant experience (optional)
         project_count: Number of relevant projects (optional)
         education_level: Highest education level (optional)
+        coding_score: Coding profile score (0-100, optional)
         weights: Custom weights dict (optional, uses defaults if None)
 
     Returns:
@@ -50,13 +52,13 @@ def calculate_unified_ranking(
         - breakdown: Individual factor scores
         - weights: Weights used for calculation
     """
-    # Default weights
+    # Default weights - updated to include coding profile
+    # ATS 25%, Semantic 35%, Academic 15%, Coding 25%
     default_weights = {
-        "ats": 0.30,
-        "semantic": 0.30,
-        "experience": 0.20,
-        "projects": 0.10,
-        "education": 0.10,
+        "ats": 0.25,
+        "semantic": 0.35,
+        "academic": 0.15,
+        "coding": 0.25,
     }
 
     if weights is None:
@@ -68,25 +70,21 @@ def calculate_unified_ranking(
         weights = {k: v / total_weight for k, v in weights.items()}
 
     # Calculate individual scores
-    ats_component = ats_score * weights.get("ats", 0.30)
-    semantic_component = semantic_similarity * weights.get("semantic", 0.30)
+    ats_component = ats_score * weights.get("ats", 0.25)
+    semantic_component = semantic_similarity * weights.get("semantic", 0.35)
 
-    # Experience score (0-100)
-    experience_score = _calculate_experience_score(experience_years)
-    experience_component = experience_score * weights.get("experience", 0.20)
+    # Academic score (0-100) - derived from education level
+    academic_score = _calculate_education_score(education_level)
+    academic_component = academic_score * weights.get("academic", 0.15)
 
-    # Projects score (0-100)
-    projects_score = _calculate_projects_score(project_count)
-    projects_component = projects_score * weights.get("projects", 0.10)
-
-    # Education score (0-100)
-    education_score = _calculate_education_score(education_level)
-    education_component = education_score * weights.get("education", 0.10)
+    # Coding score (0-100) - from coding profile integration
+    if coding_score is None:
+        coding_score = 0
+    coding_component = coding_score * weights.get("coding", 0.25)
 
     # Overall score
     overall = round(
-        ats_component + semantic_component + experience_component
-        + projects_component + education_component,
+        ats_component + semantic_component + academic_component + coding_component,
         2,
     )
 
@@ -96,30 +94,23 @@ def calculate_unified_ranking(
             "ats": {
                 "score": ats_score,
                 "weighted": round(ats_component, 2),
-                "weight": weights.get("ats", 0.30),
+                "weight": weights.get("ats", 0.25),
             },
             "semantic": {
                 "score": semantic_similarity,
                 "weighted": round(semantic_component, 2),
-                "weight": weights.get("semantic", 0.30),
+                "weight": weights.get("semantic", 0.35),
             },
-            "experience": {
-                "score": experience_score,
-                "weighted": round(experience_component, 2),
-                "weight": weights.get("experience", 0.20),
-                "years": experience_years,
-            },
-            "projects": {
-                "score": projects_score,
-                "weighted": round(projects_component, 2),
-                "weight": weights.get("projects", 0.10),
-                "count": project_count,
-            },
-            "education": {
-                "score": education_score,
-                "weighted": round(education_component, 2),
-                "weight": weights.get("education", 0.10),
+            "academic": {
+                "score": academic_score,
+                "weighted": round(academic_component, 2),
+                "weight": weights.get("academic", 0.15),
                 "level": education_level,
+            },
+            "coding": {
+                "score": coding_score,
+                "weighted": round(coding_component, 2),
+                "weight": weights.get("coding", 0.25),
             },
         },
         "weights_used": weights,

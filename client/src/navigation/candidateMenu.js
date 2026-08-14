@@ -2,9 +2,8 @@
  * Candidate Sidebar Navigation Configuration
  *
  * Candidate features only:
- * - Jobs (Browse Jobs, My Applications)
+ * - Jobs (Browse Jobs, My Applications, Analytics)
  * - AI (Resume Analysis, Job Match, Career Insights)
- * - Portfolio (My Portfolio, Settings)
  * - Communication (Notifications)
  */
 import ROUTES from '../constants/routes'
@@ -13,16 +12,26 @@ import {
   FileCheck,
   BarChart3,
   Brain,
+  MessageCircle,
+  Route,
+  Fingerprint,
   TrendingUp,
-  FolderKanban,
-  Award,
   Sparkles,
-  Settings,
   Bell,
   BarChart2,
+  MessageSquare,
+  Code2,
 } from 'lucide-react'
 
 const CANDIDATE_MENU = [
+  {
+    id: 'intelligence',
+    label: 'Intelligence',
+    icon: Fingerprint,
+    items: [
+      { path: ROUTES.CANDIDATE.DIGITAL_TWIN, label: 'Digital Twin', icon: Fingerprint },
+    ],
+  },
   {
     id: 'jobs',
     label: 'Jobs',
@@ -30,6 +39,7 @@ const CANDIDATE_MENU = [
     items: [
       { path: ROUTES.CANDIDATE.JOBS, label: 'Browse Jobs', icon: Briefcase },
       { path: ROUTES.CANDIDATE.APPLICATIONS, label: 'My Applications', icon: FileCheck },
+      { path: ROUTES.CANDIDATE.ANALYTICS, label: 'Analytics', icon: BarChart2 },
     ],
   },
   {
@@ -37,19 +47,12 @@ const CANDIDATE_MENU = [
     label: 'AI',
     icon: Sparkles,
     items: [
+      { path: ROUTES.CANDIDATE.COPILOT, label: 'AI Career Coach', icon: MessageCircle },
+      { path: ROUTES.CANDIDATE.LEARNING_ROADMAP, label: 'Learning Roadmap', icon: Route },
       { path: ROUTES.CANDIDATE.RESUME_ANALYSIS, label: 'Resume Analysis', icon: BarChart3 },
       { path: ROUTES.CANDIDATE.JOB_MATCH, label: 'Job Match', icon: Brain },
       { path: ROUTES.CANDIDATE.CAREER_INSIGHTS, label: 'Career Insights', icon: TrendingUp },
-    ],
-  },
-  {
-    id: 'portfolio',
-    label: 'Portfolio',
-    icon: FolderKanban,
-    items: [
-      { path: ROUTES.CANDIDATE.PORTFOLIO, label: 'My Portfolio', icon: Award },
-      { path: ROUTES.CANDIDATE.ANALYTICS, label: 'Analytics', icon: BarChart2 },
-      { path: ROUTES.CANDIDATE.SETTINGS, label: 'Settings', icon: Settings },
+      { path: ROUTES.CANDIDATE.CODING_PROFILE, label: 'Coding Profile', icon: Code2 },
     ],
   },
   {
@@ -58,6 +61,7 @@ const CANDIDATE_MENU = [
     icon: Bell,
     items: [
       { path: ROUTES.CANDIDATE.NOTIFICATIONS, label: 'Notifications', icon: Bell },
+      { path: ROUTES.CANDIDATE.FEEDBACK, label: 'Feedback', icon: MessageSquare },
     ],
   },
 ]

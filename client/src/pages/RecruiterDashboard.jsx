@@ -7,8 +7,10 @@ import {
   Briefcase,
   Clock,
   FileText,
+  FolderKanban,
   Plus,
   Sparkles,
+  Star,
   ThumbsUp,
   TrendingUp,
   Users,
@@ -17,6 +19,7 @@ import ROUTES from '../constants/routes'
 import { AuthContext } from '../context/authContext'
 import http from '../services/http.service'
 import recruiterService from '../services/recruiter.service'
+import projectService from '../services/projectService'
 import { normalizeArray } from '../utils/apiNormalizer'
 
 function RecruiterDashboard() {
@@ -24,6 +27,7 @@ function RecruiterDashboard() {
   const [jobs, setJobs] = useState([])
   const [applications, setApplications] = useState([])
   const [feedbacks, setFeedbacks] = useState([])
+  const [topProjects, setTopProjects] = useState([])
   const [loading, setLoading] = useState(true)
 
   const currentDate = useMemo(
@@ -47,7 +51,7 @@ function RecruiterDashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [jobsData, appsData, feedbackData] = await Promise.allSettled([
+        const [jobsData, appsData, feedbackData, projectsData] = await Promise.allSettled([
           recruiterService.getMyJobs(),
           recruiterService.getApplications(),
           (async () => {
@@ -56,6 +60,7 @@ function RecruiterDashboard() {
               return res.data
             } catch { return [] }
           })(),
+          projectService.getRecruiterProjects({ limit: 5, sort: '-projectScore.portfolioScore' }),
         ])
 
         if (jobsData.status === 'fulfilled' && jobsData.value) {
@@ -68,6 +73,10 @@ function RecruiterDashboard() {
 
         if (feedbackData.status === 'fulfilled') {
           setFeedbacks(normalizeArray(feedbackData.value))
+        }
+
+        if (projectsData.status === 'fulfilled' && projectsData.value) {
+          setTopProjects(projectsData.value.projects || [])
         }
       } catch (error) {
         console.error(error)
@@ -130,6 +139,52 @@ function RecruiterDashboard() {
         <Link to={ROUTES.RECRUITER.ANALYTICS} className="group">
           <Stat label="Avg Match Score" value={applications.length > 0 ? `${averageMatchScore}%` : '--'} icon={TrendingUp} tone="violet" />
         </Link>
+      </section>
+
+      {/* Top Portfolio Candidates */}
+      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">Top Portfolio Candidates</h3>
+            <p className="text-xs text-slate-400">Candidates with highest AI project scores</p>
+          </div>
+          <Link to={ROUTES.RECRUITER.PORTFOLIO} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline">
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+
+        {topProjects.length === 0 ? (
+          <div className="py-6 text-center">
+            <FolderKanban className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+            <p className="text-sm font-medium text-slate-500">No portfolio projects available</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {topProjects.slice(0, 4).map((project) => (
+              <Link key={project._id} to={ROUTES.RECRUITER.PORTFOLIO} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-colors hover:bg-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
+                    <FolderKanban className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{project.title}</p>
+                    <p className="text-xs text-slate-400">
+                      {typeof project.userId === 'object' ? project.userId.name : 'Candidate'}
+                      {project.technologies?.length > 0 && ` - ${project.technologies.slice(0, 3).join(', ')}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {project.projectScore?.portfolioScore > 0 && (
+                    <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-600">
+                      <Star className="h-3 w-3" /> {project.projectScore.portfolioScore}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="grid gap-8 lg:grid-cols-12">

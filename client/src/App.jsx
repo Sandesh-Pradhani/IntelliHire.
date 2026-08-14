@@ -6,7 +6,6 @@ import NotFound from './pages/NotFound'
 import AuthRoutes from './routes/AuthRoutes'
 import CandidateRoutes from './routes/CandidateRoutes'
 import RecruiterRoutes from './routes/RecruiterRoutes'
-import GlobalSearch from './pages/GlobalSearch'
 
 function App() {
   return (
@@ -15,8 +14,6 @@ function App() {
       {CandidateRoutes()}
       {RecruiterRoutes()}
       <Route path={ROUTES.ROOT} element={<RootRedirect />} />
-      <Route path={ROUTES.CANDIDATE.SEARCH} element={<GlobalSearch />} />
-      <Route path={ROUTES.RECRUITER.SEARCH} element={<GlobalSearch />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )

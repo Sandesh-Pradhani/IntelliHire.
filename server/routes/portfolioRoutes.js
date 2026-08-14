@@ -7,53 +7,38 @@ const Language = require('../models/Language')
 const PortfolioLink = require('../models/PortfolioLink')
 const authMiddleware = require('../middleware/authMiddleware')
 const { requireRole } = require('../middleware/roleMiddleware')
+const projectController = require('../controllers/projectController')
+const { getProjectScore } = require('../services/projectService')
 const router = express.Router()
+const { recordCandidateMemory } = require('../services/candidateMemoryService')
 router.use(authMiddleware, requireRole('candidate'))
 
-// ── Projects ──
-router.get('/projects', async (req, res) => {
-  try {
-    const projects = await Project.find({ userId: req.user.id }).sort({ createdAt: -1 })
-    res.json(projects)
-  } catch (error) {
-    console.error('[Projects Fetch]:', error)
-    res.status(500).json({ message: 'Failed to fetch projects' })
-  }
-})
+// ── Projects (Enhanced with controller) ──
+router.get('/projects', projectController.getProjects)
+router.get('/projects/stats', projectController.getPortfolioStats)
+router.get('/projects/:id', projectController.getProject)
+router.post('/projects', projectController.createProject)
+router.put('/projects/:id', projectController.updateProject)
+router.delete('/projects/:id', projectController.deleteProject)
 
-router.post('/projects', async (req, res) => {
+// ── Project AI Score ──
+router.post('/projects/:id/score', async (req, res) => {
   try {
-    const project = await Project.create({ ...req.body, userId: req.user.id })
-    res.status(201).json(project)
-  } catch (error) {
-    console.error('[Project Create]:', error)
-    res.status(500).json({ message: 'Failed to create project' })
-  }
-})
+    const project = await Project.findOne({ _id: req.params.id, userId: req.user.id })
+    if (!project) return res.status(404).json({ message: 'Project not found' })
 
-router.put('/projects/:id', async (req, res) => {
-  try {
-    const project = await Project.findOneAndUpdate(
+    const scoreResult = await getProjectScore(project)
+
+    const updated = await Project.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
-      req.body,
+      { projectScore: scoreResult },
       { new: true }
     )
-    if (!project) return res.status(404).json({ message: 'Project not found' })
-    res.json(project)
-  } catch (error) {
-    console.error('[Project Update]:', error)
-    res.status(500).json({ message: 'Failed to update project' })
-  }
-})
 
-router.delete('/projects/:id', async (req, res) => {
-  try {
-    const project = await Project.findOneAndDelete({ _id: req.params.id, userId: req.user.id })
-    if (!project) return res.status(404).json({ message: 'Project not found' })
-    res.json({ message: 'Project deleted' })
+    res.json(updated)
   } catch (error) {
-    console.error('[Project Delete]:', error)
-    res.status(500).json({ message: 'Failed to delete project' })
+    console.error('[ProjectScore]:', error)
+    res.status(500).json({ message: 'Failed to score project' })
   }
 })
 
@@ -71,6 +56,7 @@ router.get('/certificates', async (req, res) => {
 router.post('/certificates', async (req, res) => {
   try {
     const certificate = await Certificate.create({ ...req.body, userId: req.user.id })
+    await recordCandidateMemory({ candidateId: req.user.id, event: 'certificate_added', entityType: 'certificate', entityId: certificate._id, summary: `Added certificate: ${certificate.name}`, metadata: { issuer: certificate.issuer }, dedupeKey: `certificate_added:${certificate._id}` })
     res.status(201).json(certificate)
   } catch (error) {
     console.error('[Certificate Create]:', error)
@@ -118,6 +104,7 @@ router.get('/coding-profiles', async (req, res) => {
 router.post('/coding-profiles', async (req, res) => {
   try {
     const profile = await CodingProfile.create({ ...req.body, userId: req.user.id })
+    await recordCandidateMemory({ candidateId: req.user.id, event: 'coding_profile_added', entityType: 'coding_profile', entityId: profile._id, summary: `Connected ${profile.platform} coding profile`, metadata: { platform: profile.platform, problemsSolved: profile.problemsSolved }, dedupeKey: `coding_profile_added:${profile._id}` })
     res.status(201).json(profile)
   } catch (error) {
     console.error('[CodingProfile Create]:', error)
@@ -165,6 +152,7 @@ router.get('/experience', async (req, res) => {
 router.post('/experience', async (req, res) => {
   try {
     const experience = await Experience.create({ ...req.body, userId: req.user.id })
+    await recordCandidateMemory({ candidateId: req.user.id, event: 'experience_added', entityType: 'experience', entityId: experience._id, summary: `Added experience: ${experience.role} at ${experience.company}`, metadata: { technologies: experience.technologies || [] }, dedupeKey: `experience_added:${experience._id}` })
     res.status(201).json(experience)
   } catch (error) {
     console.error('[Experience Create]:', error)
@@ -259,6 +247,7 @@ router.get('/links', async (req, res) => {
 router.post('/links', async (req, res) => {
   try {
     const link = await PortfolioLink.create({ ...req.body, userId: req.user.id })
+    await recordCandidateMemory({ candidateId: req.user.id, event: 'profile_linked', entityType: 'profile', entityId: link._id, summary: `Linked ${link.platform} profile`, metadata: { platform: link.platform }, dedupeKey: `profile_linked:${link._id}` })
     res.status(201).json(link)
   } catch (error) {
     console.error('[Link Create]:', error)
