@@ -6,6 +6,7 @@ const Experience = require('../models/Experience')
 const Language = require('../models/Language')
 const PortfolioLink = require('../models/PortfolioLink')
 const AcademicProfile = require('../models/AcademicProfile')
+const Job = require('../models/Job')
 
 const clamp = (value) => Math.max(0, Math.min(100, Math.round(value)))
 const unique = (values) => [...new Set(values.filter(Boolean).map((value) => String(value).trim()).filter(Boolean))]
@@ -54,8 +55,12 @@ function buildKnowledgeGraph({ userId, skills, resumes, projects, certificates, 
 /**
  * Builds an explainable, deterministic candidate representation from records
  * already owned by the candidate. Scores are signals, not hiring decisions.
+ * 
+ * @param {Object} user - User object
+ * @param {String} [jobId] - Optional job ID for job-specific intelligence
+ * @param {Object} [aiEngineUrl] - AI engine URL for job matching
  */
-async function buildCandidateTwin(user) {
+async function buildCandidateTwin(user, jobId) {
   const userId = user._id || user.id
   const [resumes, projects, certificates, codingProfiles, experience, languages, links, academic] = await Promise.all([
     Resume.find({ userId }).sort({ uploadedAt: 1 }).lean(),
@@ -86,17 +91,99 @@ async function buildCandidateTwin(user) {
   const completedSections = profileSections.filter(Boolean).length
 
   const technical = clamp(skills.length * 5 + projects.length * 8 + experience.length * 9 + Math.min(codingEvidence / 5, 16))
-  const project = clamp(projects.length * 20 + projectDescriptions * 8 + (hasGithub ? 16 : 0) + projects.filter((item) => item.liveLink).length * 8)
+  const projectScore = clamp(projects.length * 20 + projectDescriptions * 8 + (hasGithub ? 16 : 0) + projects.filter((item) => item.liveLink).length * 8)
   const learning = clamp(certificates.length * 16 + codingProfiles.length * 13 + Math.max(resumes.length - 1, 0) * 9 + Math.min(skills.length * 2, 20))
   const growth = clamp(45 + Math.max(latestAts - firstAts, 0) * 3 + Math.min(Math.max(resumes.length - 1, 0) * 10, 25) + Math.min(certificates.length * 5, 15))
   const communication = clamp((latestAts || avgAts) * 0.55 + languages.length * 10 + (hasLinkedIn ? 12 : 0) + projectDescriptions * 4)
   const confidence = clamp((completedSections / profileSections.length) * 75 + (skills.length ? 10 : 0) + (hasGithub ? 8 : 0) + (hasLinkedIn ? 7 : 0))
   const ats = clamp(latestAts || avgAts)
-  const employability = clamp(ats * 0.25 + technical * 0.24 + project * 0.16 + learning * 0.12 + growth * 0.1 + communication * 0.06 + confidence * 0.07)
+  const employability = clamp(ats * 0.25 + technical * 0.24 + projectScore * 0.16 + learning * 0.12 + growth * 0.1 + communication * 0.06 + confidence * 0.07)
+
+  // Job-specific intelligence
+  let jobMatchScore = null
+  let matchedSkills = []
+  let missingSkills = []
+  let relevantProjects = []
+  let relevantCertificates = []
+  let academicSummary = ''
+  let recommendation = 'Consider'
+
+  if (jobId) {
+    try {
+      const job = await Job.findById(jobId).select('title company description technologies location jobType salaryMin salaryMax').lean()
+      if (job) {
+        // Call AI engine for job matching
+        const aiResponse = await axios.post(
+          `${process.env.AI_ENGINE_URL}/job-match`,
+          {
+            job,
+            resume: resumes.at(-1) || {},
+            candidateSkills: skills,
+            requiredSkills: job.technologies || []
+          }
+        )
+
+        jobMatchScore = aiResponse.data.finalScore || aiResponse.data.matchScore || 0
+        matchedSkills = aiResponse.data.matchedSkills || []
+        missingSkills = aiResponse.data.missingSkills || []
+
+        // Filter projects by technology relevance
+        if (projects.length > 0 && job.technologies) {
+          const jobTechSet = new Set(job.technologies.map(t => t.toLowerCase()))
+          relevantProjects = projects.filter(project => {
+            const projectTechSet = new Set((project.technologies || []).map(t => t.toLowerCase()))
+            return [...projectTechSet].some(tech => jobTechSet.has(tech))
+          }).slice(0, 5) // Top 5 most relevant
+        }
+
+        // Filter certificates by relevance
+        if (certificates.length > 0 && job.technologies) {
+          const jobTechSet = new Set(job.technologies.map(t => t.toLowerCase()))
+          relevantCertificates = certificates.filter(cert => {
+            const certSkills = (cert.skills || []).map(s => s.toLowerCase())
+            return certSkills.some(skill => jobTechSet.has(skill))
+          }).slice(0, 3)
+        }
+
+        // Generate academic summary based on job level
+        if (job.jobType && academic) {
+          const jobLevelMap = {
+            'internship': 'entry-level',
+            'entry-level': 'entry-level',
+            'associate': 'associate',
+            'senior': 'senior',
+            'lead': 'senior',
+            'principal': 'principal',
+            'manager': 'management',
+            'director': 'executive'
+          }
+          const expectedLevel = jobLevelMap[job.jobType.toLowerCase()] || 'entry-level'
+          academicSummary = `This role is ${expectedLevel}. CGPA: ${academic.cgpa}, Branch: ${academic.branch}`
+        }
+
+        // Generate recommendation based on score
+        if (jobMatchScore >= 90) {
+          recommendation = 'Strongly Recommended'
+        } else if (jobMatchScore >= 80) {
+          recommendation = 'Recommended'
+        } else if (jobMatchScore >= 70) {
+          recommendation = 'Consider'
+        } else if (jobMatchScore >= 60) {
+          recommendation = 'Needs Review'
+        } else {
+          recommendation = 'Low Match'
+        }
+      }
+    } catch (aiError) {
+      console.error('AI matching error:', aiError.message)
+      // Continue without AI data if AI engine fails
+      jobMatchScore = 0
+    }
+  }
 
   const strengths = [
     technical >= 65 && 'Strong technical evidence across skills, projects, and experience.',
-    project >= 60 && 'Portfolio demonstrates shipped project work.',
+    projectScore >= 60 && 'Portfolio demonstrates shipped project work.',
     learning >= 60 && 'Learning momentum is supported by credentials or coding activity.',
     growth >= 65 && 'Profile shows measurable improvement over time.',
     confidence >= 70 && 'Profile is well substantiated across multiple sources.',
@@ -115,7 +202,7 @@ async function buildCandidateTwin(user) {
     generatedAt: new Date().toISOString(),
     purpose: 'A transparent career-development signal built from candidate-provided information; it is not an automated hiring decision.',
     scores: {
-      ats, technical, communication, project, learning, growth, confidence, employability,
+      ats, technical, communication, project: projectScore, learning, growth, confidence, employability,
     },
     explanations: {
       ats: `${resumes.length} resume version${resumes.length === 1 ? '' : 's'}; latest ATS score ${ats}%.`,
@@ -128,6 +215,13 @@ async function buildCandidateTwin(user) {
     knowledgeGraph: buildKnowledgeGraph({ userId, skills, resumes, projects, certificates, experience, links, academic }),
     resumeTimeline: resumes.map((resume, index) => ({ id: String(resume._id), version: index + 1, name: resume.fileName, score: resume.atsScore || 0, date: resume.uploadedAt })),
     insights: { strengths, improvements, nextBestAction: improvements[0] || 'Keep adding recent evidence to maintain your profile.' },
+    jobMatchScore,
+    matchedSkills,
+    missingSkills,
+    relevantProjects,
+    relevantCertificates,
+    academicSummary,
+    recommendation
   }
 }
 

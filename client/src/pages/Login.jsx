@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import ROUTES, { getDashboardRoute } from '../constants/routes'
+import { Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { getDashboardRoute } from '../constants/routes'
 import { AuthContext } from '../context/authContext'
 import authService from '../services/auth.service'
 
@@ -11,6 +12,8 @@ function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [detectedRole, setDetectedRole] = useState(null)
 
   const handleLogin = async () => {
     setLoading(true)
@@ -18,6 +21,7 @@ function Login() {
 
     try {
       const data = await authService.login({ email, password })
+      setDetectedRole(data.user?.role)
       login(data.user, data.token)
       navigate(getDashboardRoute(data.user?.role), { replace: true })
     } catch (err) {
@@ -48,13 +52,24 @@ function Login() {
             className="w-full rounded-xl border px-4 py-3 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl border px-4 py-3 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full rounded-xl border px-4 py-3 pr-12 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+              tabIndex={-1}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          </div>
 
           <button
             type="button"
@@ -78,6 +93,20 @@ function Login() {
               'Login'
             )}
           </button>
+
+          {detectedRole && (
+            <div
+              className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ${
+                detectedRole === 'recruiter'
+                  ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border border-blue-200 bg-blue-50 text-blue-700'
+              }`}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Logging in as:{' '}
+              <span className="capitalize">{detectedRole}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

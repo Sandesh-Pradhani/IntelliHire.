@@ -55,6 +55,10 @@ uploads/
 
 # AI Models
 *.pkl
+*.joblib
+*.onnx
+ai-engine/models/*
+!ai-engine/models/.gitkeep
 
 # Coverage
 coverage/

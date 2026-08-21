@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react'
 import axios from 'axios'
-import { Briefcase, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
+import { Briefcase, ChevronDown, ChevronUp, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import Skeleton from '../components/ui/Skeleton'
 import { AuthContext } from '../context/authContext'
 import { normalizeArray } from '../utils/apiNormalizer'
@@ -12,6 +12,7 @@ function Jobs({ action }) {
   const [jobs, setJobs] = useState([])
   const [appliedJobIds, setAppliedJobIds] = useState(new Set())
   const [editingJobId, setEditingJobId] = useState('')
+  const [expandedJobs, setExpandedJobs] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -127,6 +128,18 @@ function Jobs({ action }) {
       console.log(requestError)
       setError(requestError.response?.data?.message || 'Failed to delete job.')
     }
+  }
+
+  const toggleDescription = (jobId) => {
+    setExpandedJobs((current) => {
+      const next = new Set(current)
+      if (next.has(jobId)) {
+        next.delete(jobId)
+      } else {
+        next.add(jobId)
+      }
+      return next
+    })
   }
 
   const applyJob = async (jobId) => {
@@ -268,7 +281,28 @@ function Jobs({ action }) {
 
                   <h2 className="text-2xl font-bold text-slate-800">{job.title || 'Untitled Position'}</h2>
                   <p className="mt-2 font-medium text-blue-600">{job.company || 'Unknown Company'}</p>
-                  <p className="mt-4 leading-relaxed text-slate-600">{job.description || 'No description provided.'}</p>
+                  <div className="mt-4">
+                    <p className={`leading-relaxed text-slate-600 ${expandedJobs.has(job._id) ? '' : 'line-clamp-3'}`}>
+                      {job.description || 'No description provided.'}
+                    </p>
+                    {job.description && job.description.length > 150 ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleDescription(job._id)}
+                        className="mt-2 flex items-center gap-1 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
+                      >
+                        {expandedJobs.has(job._id) ? (
+                          <>
+                            Read Less <ChevronUp className="h-4 w-4" />
+                          </>
+                        ) : (
+                          <>
+                            Read More <ChevronDown className="h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+                    ) : null}
+                  </div>
 
                   {role === 'candidate' ? (
                     <div className="mt-6 flex justify-end">

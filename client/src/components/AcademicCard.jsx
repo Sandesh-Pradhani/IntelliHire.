@@ -10,7 +10,8 @@ import { GraduationCap, Calendar, BookOpen, Building2, AlertTriangle } from 'luc
 const FIELD_META = {
   cgpa:            { label: 'CGPA', icon: GraduationCap, format: (v) => `${v} / 10` },
   branch:          { label: 'Branch', icon: BookOpen },
-  college:         { label: 'College / University', icon: Building2 },
+  college:         { label: 'College / Institution', icon: Building2 },
+  university:      { label: 'University', icon: Building2 },
   graduationYear:  { label: 'Graduation Year', icon: Calendar },
   currentSemester: { label: 'Current Semester', icon: Calendar },
   backlogs:        { label: 'Active Backlogs', icon: AlertTriangle, format: (v) => `${v}` },
@@ -57,6 +58,21 @@ export default function AcademicCard({ profile, onEdit, aiScore }) {
             )
           })}
         </div>
+
+        {profile.academicAchievements && profile.academicAchievements.length > 0 && (
+          <div className="mt-5 pt-4 border-t border-slate-100">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+              Academic Achievements
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {profile.academicAchievements.map((achievement, idx) => (
+                <span key={idx} className="rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                  {achievement}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {onEdit && (
           <button

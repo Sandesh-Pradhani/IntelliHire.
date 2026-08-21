@@ -23,6 +23,7 @@ const decisionIntelligenceRoutes = require('./routes/decisionIntelligenceRoutes'
 const organizationRoutes = require('./routes/organizationRoutes')
 const codingProfileRoutes = require('./routes/codingProfileRoutes')
 const recruiterProjectRoutes = require('./routes/recruiterProjectRoutes')
+const resumeBuilderRoutes = require('./routes/resumeBuilderRoutes')
 
 connectDB()
 
@@ -57,11 +58,13 @@ app.use('/api/portfolio', portfolioRoutes)
 app.use('/api/saved-jobs', savedJobsRoutes)
 app.use('/api/notifications', notificationsRoutes)
 app.use('/api/intelligence', candidateIntelligenceRoutes)
+app.use('/api/candidates', candidateIntelligenceRoutes)
 app.use('/api/copilot', copilotRoutes)
 app.use('/api/decision-intelligence', decisionIntelligenceRoutes)
 app.use('/api/organizations', organizationRoutes)
 app.use('/api/coding-profile', codingProfileRoutes)
 app.use('/api/recruiter/portfolio', recruiterProjectRoutes)
+app.use('/api/resume-builder', resumeBuilderRoutes)
 
 app.get('/', (req, res) => {
     res.send('IntelliHire Backend Running')

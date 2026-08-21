@@ -3,7 +3,6 @@ import axios from 'axios'
 import { Brain, Sparkles, TrendingUp, Users, Award, CheckCircle2, AlertTriangle } from 'lucide-react'
 import SectionHeader from '../components/common/SectionHeader'
 import EmptyState from '../components/common/EmptyState'
-import jobsService from '../services/jobs.service'
 import { normalizeArray } from '../utils/apiNormalizer'
 
 export default function RecruiterJobMatch() {
@@ -18,7 +17,10 @@ export default function RecruiterJobMatch() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const jobsData = await jobsService.getMyJobs()
+        const token = localStorage.getItem('token')
+        const headers = token ? { Authorization: `Bearer ${token}` } : {}
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/jobs/all`, { headers })
+        const jobsData = res.data?.jobs ?? res.data
         setJobs(normalizeArray(Array.isArray(jobsData) ? jobsData : []))
       } catch {
         setJobs([])
@@ -28,34 +30,38 @@ export default function RecruiterJobMatch() {
   }, [])
 
   useEffect(() => {
-    if (!selectedJob) { setCandidates([]); return }
     async function fetchCandidates() {
       try {
         const token = localStorage.getItem('token')
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/applications/recruiter`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/recruiter/candidates`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-        const apps = normalizeArray(res.data)
-        const filtered = apps.filter((a) => a.jobId === selectedJob || a.job?._id === selectedJob)
-        const unique = [...new Map(filtered.map((a) => [a.candidateId || a.candidate?._id, a])).values()]
-        setCandidates(unique.map((a) => ({
-          _id: a.candidateId || a.candidate?._id,
-          name: a.candidateName || a.candidate?.name || 'Candidate',
-          email: a.candidateEmail || a.candidate?.email || '',
-          atsScore: a.atsScore || 0,
-          matchScore: a.matchScore || 0,
-          skills: a.matchedSkills || [],
+        const list = normalizeArray(res.data)
+        setCandidates(list.map((c) => ({
+          _id: c._id,
+          name: c.name || 'Candidate',
+          email: c.email || '',
+          atsScore: c.atsScore || 0,
+          matchScore: c.matchScore || 0,
+          skills: c.skills || [],
+          hasResume: Boolean(c.hasResume),
+          applicationCount: c.applicationCount || 0,
         })))
       } catch {
         setCandidates([])
       }
     }
     fetchCandidates()
-  }, [selectedJob])
+  }, [])
 
   const selectedJobRecord = useMemo(
     () => jobs.find((j) => j._id === selectedJob),
     [selectedJob, jobs]
+  )
+
+  const availableCandidates = useMemo(
+    () => candidates.filter((c) => c.hasResume),
+    [candidates]
   )
 
   const selectedCandidateRecord = useMemo(
@@ -129,14 +135,23 @@ export default function RecruiterJobMatch() {
           <select
             value={selectedCandidate}
             onChange={(e) => { setSelectedCandidate(e.target.value); setResult(null) }}
-            disabled={!selectedJob}
+            disabled={!selectedJob || availableCandidates.length === 0}
             className="w-full rounded-xl border border-slate-200 p-3.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <option value="">{selectedJob ? 'Choose a candidate...' : 'Select a job first...'}</option>
-            {candidates.map((c) => (
+            <option value="">
+              {!selectedJob
+                ? 'Select a job first...'
+                : availableCandidates.length === 0
+                  ? 'No candidates with resumes available...'
+                  : 'Choose a candidate...'}
+            </option>
+            {availableCandidates.map((c) => (
               <option key={c._id} value={c._id}>{c.name} (ATS: {c.atsScore})</option>
             ))}
           </select>
+          {availableCandidates.length > 0 ? (
+            <p className="mt-2 text-xs text-slate-400">{availableCandidates.length} candidate{availableCandidates.length === 1 ? '' : 's'} available for matching</p>
+          ) : null}
           {selectedCandidateRecord ? (
             <div className="mt-4 rounded-xl bg-slate-50 p-3">
               <p className="text-xs font-semibold text-slate-600">Skills</p>
@@ -184,17 +199,17 @@ export default function RecruiterJobMatch() {
                 <Users className="h-7 w-7" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-slate-800">{result.candidate?.name || selectedCandidateRecord?.name}</h3>
-                <p className="text-sm text-slate-500">{result.candidate?.email || selectedCandidateRecord?.email}</p>
+                <h3 className="text-xl font-bold text-slate-800">{selectedCandidateRecord?.name || 'Candidate'}</h3>
+                <p className="text-sm text-slate-500">{selectedCandidateRecord?.email || ''}</p>
               </div>
             </div>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <ScoreCard label="ATS Score" value={result.atsScore || 0} icon={Award} />
-            <ScoreCard label="Similarity" value={`${result.similarity?.overall || 0}%`} icon={Brain} />
-            <ScoreCard label="Strengths" value={(result.strengths || []).length} icon={CheckCircle2} />
-            <ScoreCard label="Weaknesses" value={(result.weaknesses || []).length} icon={AlertTriangle} />
+            <ScoreCard label="Final Score" value={`${Math.round(result.finalScore || 0)}%`} icon={Award} />
+            <ScoreCard label="Similarity" value={`${Math.round(typeof result.similarity === 'number' ? result.similarity : (result.similarity?.overall || 0))}%`} icon={Brain} />
+            <ScoreCard label="Matched Skills" value={(result.matchedSkills || []).length} icon={CheckCircle2} />
+            <ScoreCard label="Missing Skills" value={(result.missingSkills || []).length} icon={AlertTriangle} />
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -204,9 +219,13 @@ export default function RecruiterJobMatch() {
                 Matched Skills
               </h3>
               <div className="flex flex-wrap gap-2">
-                {(result.matchedSkills || []).map((skill, i) => (
-                  <span key={i} className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">{skill}</span>
-                ))}
+                {(result.matchedSkills || []).length > 0 ? (
+                  (result.matchedSkills || []).map((skill, i) => (
+                    <span key={i} className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">{skill}</span>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-400">No skills matched</p>
+                )}
               </div>
             </div>
 
@@ -216,55 +235,29 @@ export default function RecruiterJobMatch() {
                 Missing Skills
               </h3>
               <div className="flex flex-wrap gap-2">
-                {(result.missingSkills || []).map((skill, i) => (
-                  <span key={i} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700">{skill}</span>
+                {(result.missingSkills || []).length > 0 ? (
+                  (result.missingSkills || []).map((skill, i) => (
+                    <span key={i} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700">{skill}</span>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-400">No missing skills identified</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {result.skill_gap_analysis?.recommended_skills?.length > 0 ? (
+            <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-sm">
+              <h3 className="mb-3 text-lg font-bold text-slate-800">Recommended Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {(result.skill_gap_analysis.recommended_skills || []).map((rec, i) => (
+                  <span key={i} className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700">
+                    {rec.skill || rec} {rec.difficulty ? `(${rec.difficulty})` : ''}
+                  </span>
                 ))}
               </div>
             </div>
-          </div>
-
-          {result.recommendation ? (
-            <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-sm">
-              <h3 className="mb-3 text-lg font-bold text-slate-800">Recommendation</h3>
-              <p className="text-sm text-slate-700">{result.recommendation}</p>
-            </div>
           ) : null}
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {(result.strengths || []).length > 0 ? (
-              <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm">
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  Strengths
-                </h3>
-                <ul className="space-y-2">
-                  {(result.strengths || []).map((strength, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="mt-0.5 text-emerald-500">✓</span>
-                      {strength}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-
-            {(result.weaknesses || []).length > 0 ? (
-              <div className="rounded-3xl border border-amber-100 bg-white p-6 shadow-sm">
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800">
-                  <AlertTriangle className="h-5 w-5 text-amber-500" />
-                  Weaknesses
-                </h3>
-                <ul className="space-y-2">
-                  {(result.weaknesses || []).map((weakness, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="mt-0.5 text-amber-500">⚠</span>
-                      {weakness}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
         </div>
       ) : !loading && !selectedJob ? (
         <EmptyState

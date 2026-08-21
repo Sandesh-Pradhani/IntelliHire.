@@ -2,8 +2,8 @@
  * Candidate Sidebar Navigation Configuration
  *
  * Candidate features only:
- * - Jobs (Browse Jobs, My Applications, Analytics)
- * - AI (Resume Analysis, Job Match, Career Insights)
+ * - Jobs (Browse Jobs, Job Match, My Applications, Analytics)
+ * - AI (Resume Analysis, Career Insights)
  * - Communication (Notifications)
  */
 import ROUTES from '../constants/routes'
@@ -21,6 +21,7 @@ import {
   BarChart2,
   MessageSquare,
   Code2,
+  FileEdit,
 } from 'lucide-react'
 
 const CANDIDATE_MENU = [
@@ -38,6 +39,7 @@ const CANDIDATE_MENU = [
     icon: Briefcase,
     items: [
       { path: ROUTES.CANDIDATE.JOBS, label: 'Browse Jobs', icon: Briefcase },
+      { path: ROUTES.CANDIDATE.JOB_MATCH, label: 'Job Match', icon: Brain },
       { path: ROUTES.CANDIDATE.APPLICATIONS, label: 'My Applications', icon: FileCheck },
       { path: ROUTES.CANDIDATE.ANALYTICS, label: 'Analytics', icon: BarChart2 },
     ],
@@ -50,7 +52,7 @@ const CANDIDATE_MENU = [
       { path: ROUTES.CANDIDATE.COPILOT, label: 'AI Career Coach', icon: MessageCircle },
       { path: ROUTES.CANDIDATE.LEARNING_ROADMAP, label: 'Learning Roadmap', icon: Route },
       { path: ROUTES.CANDIDATE.RESUME_ANALYSIS, label: 'Resume Analysis', icon: BarChart3 },
-      { path: ROUTES.CANDIDATE.JOB_MATCH, label: 'Job Match', icon: Brain },
+      { path: ROUTES.CANDIDATE.RESUME_BUILDER, label: 'Resume Builder', icon: FileEdit },
       { path: ROUTES.CANDIDATE.CAREER_INSIGHTS, label: 'Career Insights', icon: TrendingUp },
       { path: ROUTES.CANDIDATE.CODING_PROFILE, label: 'Coding Profile', icon: Code2 },
     ],

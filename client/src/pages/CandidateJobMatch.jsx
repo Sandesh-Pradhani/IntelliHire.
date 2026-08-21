@@ -46,13 +46,15 @@ export default function CandidateJobMatch() {
   )
 
   const runMatch = async () => {
-    if (!selectedJob) return
+    if (!selectedJob || !selectedResumeId) return
     setLoading(true)
     setError('')
     setResult(null)
 
     try {
       const data = await aiService.matchCandidateJob({ jobId: selectedJob, resumeId: selectedResumeId })
+      // The backend returns the raw AI Engine payload inside the envelope:
+      // { similarity, finalScore, matchedSkills, missingSkills, semantic_match, skill_gap_analysis, unified_ranking }
       setResult(data || null)
     } catch (err) {
       setError(err?.message || 'Failed to run AI match. Please try again.')
@@ -67,6 +69,14 @@ export default function CandidateJobMatch() {
     if (score >= 40) return 'text-amber-600 bg-amber-50 border-amber-200'
     return 'text-slate-500 bg-slate-50 border-slate-200'
   }
+
+  const finalScore = result?.finalScore ?? result?.atsScore ?? 0
+  const similarityScore = typeof result?.similarity === 'number'
+    ? result.similarity
+    : (result?.similarity?.overall || 0)
+  const matchedSkills = normalizeArray(result?.matchedSkills)
+  const missingSkills = normalizeArray(result?.missingSkills)
+  const recommendations = normalizeArray(result?.suggestions || result?.improvements)
 
   return (
     <div className="space-y-8 pb-12 animate-fade-in">
@@ -126,7 +136,7 @@ export default function CandidateJobMatch() {
         <button
           type="button"
           onClick={runMatch}
-          disabled={loading || !selectedJob}
+          disabled={loading || !selectedJob || resumes.length === 0 || !selectedResumeId}
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3.5 font-bold text-white shadow-lg shadow-blue-200 transition-all hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (
@@ -150,12 +160,18 @@ export default function CandidateJobMatch() {
         <div className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-              <h3 className="mb-4 text-lg font-bold text-slate-800">ATS Score</h3>
+              <h3 className="mb-4 text-lg font-bold text-slate-800">Match Score</h3>
               <div className="flex items-center gap-4">
-                <div className={`text-5xl font-extrabold ${getScoreColor(result.atsScore || result.finalScore || 0)} p-4 rounded-2xl`}>
-                  {result.atsScore || result.finalScore || 0}
+                <div className={`text-5xl font-extrabold ${getScoreColor(finalScore)} p-4 rounded-2xl`}>
+                  {Math.round(finalScore)}
                 </div>
                 <p className="text-sm text-slate-500">Compatibility score based on AI analysis</p>
+              </div>
+              <div className="mt-4 h-2 w-full rounded-full bg-slate-100">
+                <div
+                  className={`h-2 rounded-full transition-all duration-500 ${finalScore >= 80 ? 'bg-emerald-500' : finalScore >= 60 ? 'bg-blue-500' : finalScore >= 40 ? 'bg-amber-500' : 'bg-slate-400'}`}
+                  style={{ width: `${Math.min(Math.max(finalScore, 0), 100)}%` }}
+                />
               </div>
             </div>
 
@@ -163,16 +179,20 @@ export default function CandidateJobMatch() {
               <h3 className="mb-4 text-lg font-bold text-slate-800">Match Overview</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Skills Match</span>
-                  <span className="font-bold text-emerald-600">{result.similarity?.breakdown?.skills || 0}%</span>
+                  <span className="text-sm text-slate-600">Similarity</span>
+                  <span className="font-bold text-indigo-600">{Math.round(similarityScore)}%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Experience Match</span>
-                  <span className="font-bold text-blue-600">{result.similarity?.breakdown?.experience || 0}%</span>
+                  <span className="text-sm text-slate-600">Final Score</span>
+                  <span className="font-bold text-emerald-600">{Math.round(finalScore)}%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">Overall Similarity</span>
-                  <span className="font-bold text-indigo-600">{result.similarity?.overall || result.finalScore || 0}%</span>
+                  <span className="text-sm text-slate-600">Matched Skills</span>
+                  <span className="font-bold text-blue-600">{matchedSkills.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600">Missing Skills</span>
+                  <span className="font-bold text-amber-600">{missingSkills.length}</span>
                 </div>
               </div>
             </div>
@@ -185,8 +205,8 @@ export default function CandidateJobMatch() {
                 <h3 className="text-lg font-bold text-slate-800">Matched Skills</h3>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(result.matchedSkills || []).length > 0 ? (
-                  (result.matchedSkills || []).map((skill, i) => (
+                {matchedSkills.length > 0 ? (
+                  matchedSkills.map((skill, i) => (
                     <span key={i} className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
                       {skill}
                     </span>
@@ -203,8 +223,8 @@ export default function CandidateJobMatch() {
                 <h3 className="text-lg font-bold text-slate-800">Missing Skills</h3>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(result.missingSkills || []).length > 0 ? (
-                  (result.missingSkills || []).map((skill, i) => (
+                {missingSkills.length > 0 ? (
+                  missingSkills.map((skill, i) => (
                     <span key={i} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700">
                       {skill}
                     </span>
@@ -216,16 +236,16 @@ export default function CandidateJobMatch() {
             </div>
           </div>
 
-          {(result.suggestions || result.improvements || []).length > 0 ? (
+          {recommendations.length > 0 ? (
             <div className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-sm">
               <h3 className="mb-4 text-lg font-bold text-slate-800">Improvement Suggestions</h3>
               <ul className="space-y-3">
-                {(result.suggestions || result.improvements || []).map((suggestion, i) => (
+                {recommendations.map((suggestion, i) => (
                   <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold text-blue-700">
                       {i + 1}
                     </span>
-                    {suggestion}
+                    {typeof suggestion === 'object' ? (suggestion.skill || suggestion.title || '') : suggestion}
                   </li>
                 ))}
               </ul>

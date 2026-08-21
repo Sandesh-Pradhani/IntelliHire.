@@ -104,8 +104,8 @@ function ApplicationCard({
                     </div>
                 )}
 
-                {/* Change Status Button — Opens modal via parent callback, no inline dropdown */}
-                <div className="mt-4 ml-[34px]">
+                {/* Actions: Change Status & View Intelligence */}
+                <div className="mt-4 ml-[34px] flex items-center gap-3">
                     <button
                         type="button"
                         onClick={(e) => {
@@ -120,6 +120,14 @@ function ApplicationCard({
                         {isUpdating ? 'Updating...' : 'Change Status'}
                         <ChevronDown className="h-3.5 w-3.5" />
                     </button>
+
+                    <a
+                        href={`/recruiter/candidates/${application.candidateId?._id || application.candidateId}/intelligence${application.jobId ? `?jobId=${application.jobId?._id || application.jobId}` : ''}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                    >
+                        Intelligence Profile &rarr;
+                    </a>
                 </div>
             </div>
         </div>

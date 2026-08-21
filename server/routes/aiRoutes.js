@@ -193,6 +193,69 @@ router.post(
 )
 
 /**
+ * POST /api/ai/match
+ * Phase 5: Match a candidate's resume against a job posting.
+ *
+ * Accepts either:
+ *  - { jobId, resumeId }  → fetches job description + resume skills from DB
+ *  - { job, resume }      → uses provided text directly
+ *
+ * WHY THIS APPROACH:
+ * The AI Engine /job-match endpoint requires resume/job TEXT, not IDs.
+ * This route bridges the gap by resolving IDs to text server-side,
+ * so the frontend can send either format.
+ */
+router.post(
+    '/match',
+    authMiddleware,
+    async (req, res) => {
+        try {
+            const { jobId, resumeId, job, resume } = req.body
+
+            // Resolve job text from DB if only jobId provided
+            let jobText = job
+            if (!jobText && jobId) {
+                const jobDoc = await Job.findById(jobId).lean()
+                if (!jobDoc) {
+                    return res.status(404).json({ message: 'Job not found' })
+                }
+                jobText = `${jobDoc.title || ''} ${jobDoc.description || ''} ${(jobDoc.requiredSkills || []).join(' ')}`.trim()
+            }
+
+            // Resolve resume text from DB if only resumeId provided
+            let resumeText = resume
+            if (!resumeText && resumeId) {
+                const resumeDoc = await Resume.findById(resumeId).lean()
+                if (!resumeDoc) {
+                    return res.status(404).json({ message: 'Resume not found' })
+                }
+                resumeText = `${resumeDoc.fileName || ''} ${(resumeDoc.extractedSkills || []).join(' ')}`.trim()
+            }
+
+            if (!jobText || !resumeText) {
+                return res.status(400).json({
+                    message: 'Both job and resume are required. Provide jobId/resumeId or job/resume text.'
+                })
+            }
+
+            const data = await callAiEngine('/job-match', {
+                resume: resumeText,
+                job: jobText,
+            })
+
+            res.json({
+                success: true,
+                data,
+                message: 'Job match complete',
+            })
+        } catch (error) {
+            console.error('match proxy error:', error.message)
+            res.status(500).json({ success: false, message: 'AI Engine unavailable' })
+        }
+    }
+)
+
+/**
  * POST /api/ai/analyze-resume
  * Phase 3: Direct proxy to AI Engine for resume text analysis.
  * Returns skills + ATS score + breakdown + suggestions via standard envelope.

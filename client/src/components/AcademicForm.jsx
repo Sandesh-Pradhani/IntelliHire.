@@ -12,15 +12,18 @@ const INITIAL_STATE = {
   cgpa: '',
   branch: '',
   college: '',
+  university: '',
   graduationYear: '',
   currentSemester: '',
   backlogs: 0,
+  academicAchievements: [],
 }
 
 const FIELDS = [
   { name: 'cgpa', label: 'CGPA', type: 'number', placeholder: 'e.g. 8.5', step: 0.01, min: 0, max: 10 },
   { name: 'branch', label: 'Branch', type: 'text', placeholder: 'e.g. Computer Science' },
-  { name: 'college', label: 'College / University', type: 'text', placeholder: 'e.g. IIT Bombay' },
+  { name: 'college', label: 'College / Institution', type: 'text', placeholder: 'e.g. IIT Bombay' },
+  { name: 'university', label: 'University', type: 'text', placeholder: 'e.g. IIT Bombay' },
   { name: 'graduationYear', label: 'Graduation Year', type: 'number', placeholder: 'e.g. 2026', min: 2000, max: 2100 },
   { name: 'currentSemester', label: 'Current Semester', type: 'number', placeholder: 'e.g. 6', min: 1, max: 12 },
   { name: 'backlogs', label: 'Active Backlogs', type: 'number', placeholder: 'e.g. 0', min: 0 },
@@ -68,6 +71,45 @@ export default function AcademicForm({ initialData, onSubmit, loading }) {
             />
           </div>
         ))}
+      </div>
+
+      <div className="mt-5">
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+          Academic Achievements
+        </label>
+        <div className="space-y-2">
+          {(form.academicAchievements || []).map((achievement, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <input
+                value={achievement}
+                onChange={(e) => {
+                  const updated = [...(form.academicAchievements || [])]
+                  updated[index] = e.target.value
+                  setForm({ ...form, academicAchievements: updated })
+                }}
+                placeholder="e.g. Dean's List, Gold Medal, Hackathon Winner"
+                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = (form.academicAchievements || []).filter((_, i) => i !== index)
+                  setForm({ ...form, academicAchievements: updated })
+                }}
+                className="rounded-lg px-2.5 py-2 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setForm({ ...form, academicAchievements: [...(form.academicAchievements || []), ''] })}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            + Add Achievement
+          </button>
+        </div>
       </div>
 
       <button

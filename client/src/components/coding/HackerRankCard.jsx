@@ -10,7 +10,7 @@
  * - Shows stars and skill badges with star counts
  * - Handles empty/loading states gracefully
  */
-import { Star, Award, Code2 } from 'lucide-react'
+import { Star, Award, Code2, RefreshCw, AlertCircle, Clock, ExternalLink } from 'lucide-react'
 
 function HackerRankCard({ data, loading }) {
   if (loading) {
@@ -35,6 +35,51 @@ function HackerRankCard({ data, loading }) {
           <h3 className="text-lg font-bold text-slate-800">HackerRank</h3>
         </div>
         <p className="text-sm text-slate-500">No HackerRank profile connected yet.</p>
+      </div>
+    )
+  }
+
+  // Handle data_unavailable status gracefully
+  if (data.status === 'data_unavailable') {
+    return (
+      <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-emerald-600 p-2.5 text-white">
+              <Code2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">HackerRank</h3>
+              <p className="text-xs text-slate-500">@{data.username}</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Profile Connected · Data Unavailable</p>
+              <p className="text-xs text-amber-700 mt-1">
+                HackerRank profile is linked but data could not be retrieved. This may be due to rate limits or API changes.
+              </p>
+              {data.lastSync && (
+                <p className="text-[10px] text-amber-600 mt-2 flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> Last sync: {new Date(data.lastSync).toLocaleString()}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 flex gap-2">
+          <a
+            href={`https://www.hackerrank.com/${data.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" /> View Profile
+          </a>
+        </div>
       </div>
     )
   }

@@ -81,7 +81,9 @@ function JobMatch() {
         }
       )
 
-      setResult(response.data || null)
+      // Candidate endpoint returns a standard envelope { success, data, message }.
+      // Recruiter endpoint returns the match result directly.
+      setResult((response.data?.data && response.data.success !== undefined) ? response.data.data : response.data || null)
     } catch (requestError) {
       console.log(requestError)
       setError(requestError?.response?.data?.message || 'Matching failed.')

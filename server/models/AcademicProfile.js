@@ -38,6 +38,13 @@ const AcademicProfileSchema = new mongoose.Schema({
         required: true
     },
 
+    university: {
+
+        type: String,
+
+        default: ''
+    },
+
     graduationYear: {
 
         type: Number,
@@ -57,6 +64,13 @@ const AcademicProfileSchema = new mongoose.Schema({
         type: Number,
 
         default: 0
+    },
+
+    academicAchievements: {
+
+        type: [String],
+
+        default: []
     }
 
 }, {

@@ -22,6 +22,7 @@ from services.ats_scoring_service import calculate_ats_score, _calculate_keyword
 from services.skill_gap_service import analyze_skill_gap, _analyze_difficulty, _estimate_learning_time
 from services.ranking_service import calculate_unified_ranking, _calculate_experience_score, _calculate_education_score
 from services.embedding_cache import EmbeddingCache, get_cache
+from ai.ranking_engine import calculate_final_score
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -173,6 +174,14 @@ class TestSkillGap:
 # ──────────────────────────────────────────────────────────────────────────────
 
 class TestRanking:
+    def test_calculate_final_score_uses_skill_ratio_and_similarity(self):
+        result = calculate_final_score(skill_match_score=50, similarity_score=7)
+        assert result == 33
+
+    def test_calculate_final_score_clamps_to_percentage_range(self):
+        assert calculate_final_score(skill_match_score=200, similarity_score=200) == 100
+        assert calculate_final_score(skill_match_score=-20, similarity_score=-10) == 0
+
     def test_calculate_unified_ranking_default(self):
         result = calculate_unified_ranking(ats_score=80, semantic_similarity=70)
         assert "overall" in result
@@ -181,13 +190,13 @@ class TestRanking:
 
     def test_calculate_unified_ranking_perfect(self):
         result = calculate_unified_ranking(ats_score=100, semantic_similarity=100)
-        # With defaults: 100*0.3 + 100*0.3 + 50*0.2 + 50*0.1 + 30*0.1 = 30+30+10+5+3 = 78
-        assert result["overall"] == 78.0
+        # With defaults: 100*0.25 (ats) + 100*0.35 (semantic) + 30*0.15 (default edu) + 0*0.25 (default coding) = 25+35+4.5+0 = 64.5
+        assert result["overall"] == 64.5
 
     def test_calculate_unified_ranking_zero(self):
         result = calculate_unified_ranking(ats_score=0, semantic_similarity=0)
-        # With defaults: 0*0.3 + 0*0.3 + 50*0.2 + 50*0.1 + 30*0.1 = 0+0+10+5+3 = 18
-        assert result["overall"] == 18.0
+        # With defaults: 0*0.25 + 0*0.35 + 30*0.15 + 0*0.25 = 0+0+4.5+0 = 4.5
+        assert result["overall"] == 4.5
 
     def test_calculate_unified_with_experience(self):
         result = calculate_unified_ranking(

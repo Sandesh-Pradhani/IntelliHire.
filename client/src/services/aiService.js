@@ -162,7 +162,10 @@ export const matchJob = async (job, resume, jobId = null, resumeId = null, role 
       { job, resume, jobId, resumeId },
       { headers: authHeaders() }
     )
-    return response.data
+
+    // Candidate endpoint returns a standard envelope { success, data, message }.
+    // Recruiter endpoint (via aiService) returns the match payload directly.
+    return (response.data?.data && response.data.success !== undefined) ? response.data.data : response.data
   } catch (error) {
     console.error('matchJob error:', error)
     throw error

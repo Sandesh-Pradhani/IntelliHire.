@@ -284,27 +284,30 @@ router.delete('/links/:id', async (req, res) => {
 // ── Portfolio Completion ──
 router.get('/completion', async (req, res) => {
   try {
-    const [projects, certificates, codingProfiles, experience, languages, links] = await Promise.all([
+    const AcademicProfile = require('../models/AcademicProfile')
+    const [projects, certificates, codingProfiles, experience, languages, links, academic] = await Promise.all([
       Project.countDocuments({ userId: req.user.id }),
       Certificate.countDocuments({ userId: req.user.id }),
       CodingProfile.countDocuments({ userId: req.user.id }),
       Experience.countDocuments({ userId: req.user.id }),
       Language.countDocuments({ userId: req.user.id }),
       PortfolioLink.countDocuments({ userId: req.user.id }),
+      AcademicProfile.countDocuments({ candidateId: req.user.id }),
     ])
 
     const sections = [
+      { name: 'Academic Profile', filled: academic > 0, weight: 15 },
       { name: 'Projects', filled: projects > 0, weight: 20 },
       { name: 'Certificates', filled: certificates > 0, weight: 15 },
       { name: 'Coding Profiles', filled: codingProfiles > 0, weight: 15 },
-      { name: 'Experience', filled: experience > 0, weight: 20 },
+      { name: 'Experience', filled: experience > 0, weight: 15 },
       { name: 'Languages', filled: languages > 0, weight: 10 },
-      { name: 'Portfolio Links', filled: links > 0, weight: 20 },
+      { name: 'Portfolio Links', filled: links > 0, weight: 10 },
     ]
 
     const completion = sections.reduce((sum, s) => sum + (s.filled ? s.weight : 0), 0)
 
-    res.json({ completion, sections, counts: { projects, certificates, codingProfiles, experience, languages, links } })
+    res.json({ completion, sections, counts: { projects, certificates, codingProfiles, experience, languages, links, academic } })
   } catch (error) {
     console.error('[Completion Fetch]:', error)
     res.status(500).json({ message: 'Failed to calculate completion' })

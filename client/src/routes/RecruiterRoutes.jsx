@@ -12,9 +12,7 @@ import RecruiterDashboard from '../pages/RecruiterDashboard'
 import Settings from '../pages/Settings'
 import Notifications from '../pages/Notifications'
 import Analytics from '../pages/RecruiterAnalytics'
-import RecruiterCopilot from '../pages/RecruiterCopilot'
-import InterviewIntelligence from '../pages/InterviewIntelligence'
-import CompanyIntelligence from '../pages/CompanyIntelligence'
+import CandidateIntelligence from '../pages/CandidateIntelligence'
 
 function RecruiterRoutes() {
   return (
@@ -26,13 +24,12 @@ function RecruiterRoutes() {
       )}
     >
       <Route path={ROUTES.RECRUITER.DASHBOARD} element={<RecruiterDashboard />} />
-      <Route path={ROUTES.RECRUITER.COPILOT} element={<RecruiterCopilot />} />
-      <Route path={ROUTES.RECRUITER.INTERVIEW_INTELLIGENCE} element={<InterviewIntelligence />} />
-      <Route path={ROUTES.RECRUITER.COMPANY_INTELLIGENCE} element={<CompanyIntelligence />} />
       <Route path={ROUTES.RECRUITER.JOBS} element={<Jobs action="manage" />} />
       <Route path={ROUTES.RECRUITER.JOB_CREATE} element={<Jobs action="create" />} />
       <Route path={ROUTES.RECRUITER.JOB_MANAGE} element={<Jobs action="manage" />} />
       <Route path={ROUTES.RECRUITER.CANDIDATES} element={<Rankings view="candidates" />} />
+      <Route path={ROUTES.RECRUITER.CANDIDATE_INTELLIGENCE} element={<CandidateIntelligence />} />
+      <Route path="/recruiter/candidates/:candidateId" element={<CandidateIntelligence />} />
       <Route path={ROUTES.RECRUITER.APPLICATIONS} element={<Applications />} />
       <Route path={ROUTES.RECRUITER.RANKINGS} element={<Rankings view="rankings" />} />
       <Route path={ROUTES.RECRUITER.JOB_MATCH} element={<RecruiterJobMatch />} />

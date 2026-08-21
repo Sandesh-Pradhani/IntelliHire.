@@ -30,9 +30,13 @@ import ProjectForm from '../components/ProjectForm'
 import ProjectScoreCard from '../components/ProjectScoreCard'
 import PortfolioStats from '../components/PortfolioStats'
 import TechnologyBadge from '../components/TechnologyBadge'
+import AcademicForm from '../components/AcademicForm'
+import AcademicCard from '../components/AcademicCard'
+import { createAcademicProfile, updateAcademicProfile } from '../services/academicService'
 
 const PLATFORMS = ['GitHub', 'LinkedIn', 'Portfolio', 'Other']
 const PROFICIENCY_LEVELS = ['Basic', 'Conversational', 'Professional', 'Native']
+const CERT_CATEGORIES = ['Technology', 'Cloud', 'Data Science', 'Project Management', 'Security', 'AI/ML', 'DevOps', 'Other']
 const CODING_PLATFORMS = ['LeetCode', 'HackerRank', 'CodeChef', 'Codeforces', 'GeeksforGeeks']
 const PROJECT_CATEGORIES = ['Web Development', 'Mobile Development', 'AI/ML', 'Data Science', 'DevOps', 'Backend', 'Frontend', 'Full Stack', 'Other']
 
@@ -80,6 +84,8 @@ function CandidatePortfolio({ section }) {
   const [showProjectForm, setShowProjectForm] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
   const [scoringProjectId, setScoringProjectId] = useState(null)
+  const [editingAcademic, setEditingAcademic] = useState(false)
+  const [academicLoading, setAcademicLoading] = useState(false)
 
   const [modal, setModal] = useState(null)
   const [formData, setFormData] = useState({})
@@ -184,6 +190,24 @@ function CandidatePortfolio({ section }) {
     }
   }
 
+  const handleAcademicSubmit = async (data) => {
+    setAcademicLoading(true)
+    try {
+      if (academic) {
+        const updated = await updateAcademicProfile(data)
+        setAcademic(updated)
+      } else {
+        const created = await createAcademicProfile(data)
+        setAcademic(created)
+      }
+      setEditingAcademic(false)
+    } catch (err) {
+      console.error('Academic save failed:', err)
+    } finally {
+      setAcademicLoading(false)
+    }
+  }
+
   const completionPercent = completion?.completion || 0
 
   const sections = useMemo(() => [
@@ -249,24 +273,21 @@ function CandidatePortfolio({ section }) {
       id: 'academic',
       title: 'Academic',
       icon: GraduationCap,
-      body: academic ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {[
-            ['College', academic.college],
-            ['Branch', academic.branch],
-            ['CGPA', academic.cgpa],
-            ['Graduation Year', academic.graduationYear],
-            ['Current Semester', academic.currentSemester],
-            ['Backlogs', academic.backlogs],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-              <p className="mt-2 text-sm font-bold text-slate-800">{value ?? 'Not provided'}</p>
-            </div>
-          ))}
-        </div>
+      action: (
+        <button type="button" onClick={() => setEditingAcademic(!editingAcademic)} className="flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+          {editingAcademic ? 'Cancel' : (academic ? 'Edit' : 'Add Academic Profile')}
+        </button>
+      ),
+      body: editingAcademic ? (
+        <AcademicForm
+          initialData={academic || {}}
+          onSubmit={handleAcademicSubmit}
+          loading={academicLoading}
+        />
+      ) : academic ? (
+        <AcademicCard profile={academic} onEdit={() => setEditingAcademic(true)} aiScore={null} />
       ) : (
-        <p className="text-sm text-slate-500">Academic details are not available yet.</p>
+        <EmptyItem icon={GraduationCap} text="No academic profile added yet. Click 'Add Academic Profile' to get started." />
       ),
     },
     {
@@ -326,9 +347,29 @@ function CandidatePortfolio({ section }) {
         <div className="space-y-3">
           {certificates.map((cert) => (
             <div key={cert._id} className="flex items-start justify-between rounded-2xl bg-slate-50 p-4">
-              <div>
-                <p className="text-sm font-bold text-slate-800">{cert.name}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-slate-800">{cert.name}</p>
+                  {cert.category && (
+                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">{cert.category}</span>
+                  )}
+                  {cert.verificationStatus && cert.verificationStatus !== 'unverified' && (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      cert.verificationStatus === 'verified' ? 'bg-emerald-100 text-emerald-700' :
+                      cert.verificationStatus === 'pending' ? 'bg-amber-100 text-amber-700' :
+                      cert.verificationStatus === 'expired' ? 'bg-red-100 text-red-700' :
+                      'bg-slate-100 text-slate-600'
+                    }`}>{cert.verificationStatus}</span>
+                  )}
+                </div>
                 <p className="mt-1 text-xs text-slate-500">{cert.issuer}{cert.issueDate ? ` - ${new Date(cert.issueDate).toLocaleDateString()}` : ''}</p>
+                {cert.skills && cert.skills.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {cert.skills.map((skill, i) => (
+                      <span key={i} className="rounded-lg bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">{skill}</span>
+                    ))}
+                  </div>
+                )}
                 {cert.credentialUrl && (
                   <a href={cert.credentialUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[10px] font-semibold text-blue-600 hover:underline">View Credential</a>
                 )}
@@ -611,10 +652,21 @@ function CandidatePortfolio({ section }) {
         <div className="space-y-3">
           <input placeholder="Certificate Name" value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
           <input placeholder="Issuer" value={formData.issuer || ''} onChange={(e) => setFormData({ ...formData, issuer: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
+          <select value={formData.category || 'Other'} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400">
+            {CERT_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+          </select>
           <input type="date" placeholder="Issue Date" value={formData.issueDate ? new Date(formData.issueDate).toISOString().split('T')[0] : ''} onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
           <input type="date" placeholder="Expiry Date" value={formData.expiryDate ? new Date(formData.expiryDate).toISOString().split('T')[0] : ''} onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
           <input placeholder="Credential ID" value={formData.credentialId || ''} onChange={(e) => setFormData({ ...formData, credentialId: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
           <input placeholder="Credential URL" value={formData.credentialUrl || ''} onChange={(e) => setFormData({ ...formData, credentialUrl: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
+          <input placeholder="Skills (comma separated)" value={(formData.skills || []).join(', ')} onChange={(e) => setFormData({ ...formData, skills: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
+          <input placeholder="Evidence URL (optional)" value={formData.evidence || ''} onChange={(e) => setFormData({ ...formData, evidence: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400" />
+          <select value={formData.verificationStatus || 'unverified'} onChange={(e) => setFormData({ ...formData, verificationStatus: e.target.value })} className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400">
+            <option value="unverified">Unverified</option>
+            <option value="pending">Pending Verification</option>
+            <option value="verified">Verified</option>
+            <option value="expired">Expired</option>
+          </select>
           <button type="button" onClick={() => handleSave('certificate', portfolioService.createCertificate, portfolioService.updateCertificate, setCertificates)} className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
             {editingId ? 'Update' : 'Save'}
           </button>

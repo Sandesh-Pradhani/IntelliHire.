@@ -19,7 +19,25 @@ const CertificateSchema = new mongoose.Schema({
     issueDate: Date,
     expiryDate: Date,
     credentialId: String,
-    credentialUrl: String
+    credentialUrl: String,
+    skills: {
+        type: [String],
+        default: []
+    },
+    category: {
+        type: String,
+        enum: ['Technology', 'Cloud', 'Data Science', 'Project Management', 'Security', 'AI/ML', 'DevOps', 'Other'],
+        default: 'Other'
+    },
+    evidence: {
+        type: String,
+        default: ''
+    },
+    verificationStatus: {
+        type: String,
+        enum: ['unverified', 'pending', 'verified', 'expired'],
+        default: 'unverified'
+    }
 }, {
     timestamps: true
 })

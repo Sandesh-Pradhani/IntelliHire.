@@ -92,6 +92,26 @@ function RecruiterDashboard() {
     ? Math.round(applications.reduce((sum, application) => sum + (application.matchScore || 0), 0) / applications.length)
     : 0
 
+  const interviewCount = applications.filter((app) => app.status === 'Interview').length
+  const hiredCount = applications.filter((app) => ['Hired', 'Selected'].includes(app.status)).length
+  const screeningCount = applications.filter((app) => app.status === 'Screening').length
+
+  const topSkills = useMemo(() => {
+    const skillCounts = {}
+    applications.forEach((app) => {
+      if (app.matchedSkills && Array.isArray(app.matchedSkills)) {
+        app.matchedSkills.forEach((skill) => {
+          const normalized = skill.toLowerCase()
+          skillCounts[normalized] = (skillCounts[normalized] || 0) + 1
+        })
+      }
+    })
+    return Object.entries(skillCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 8)
+      .map(([skill, count]) => ({ skill, count }))
+  }, [applications])
+
   return (
     <main className="space-y-8 animate-fade-in pb-12">
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 p-6 text-white shadow-xl sm:p-8 md:p-10">
@@ -121,23 +141,29 @@ function RecruiterDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-6">
         <Link to={ROUTES.RECRUITER.JOB_MANAGE} className="group">
           <Stat label="Active Jobs" value={jobs.length} icon={Briefcase} tone="blue" />
         </Link>
         <Link to={ROUTES.RECRUITER.APPLICATIONS} className="group">
-          <Stat label="Applications" value={applications.length} icon={FileText} tone="indigo" />
+          <Stat label="Total Applications" value={applications.length} icon={FileText} tone="indigo" />
+        </Link>
+        <Link to={ROUTES.RECRUITER.APPLICATIONS} className="group">
+          <Stat label="Interview" value={interviewCount} icon={Users} tone="violet" />
         </Link>
         <Link to={ROUTES.RECRUITER.APPLICATIONS} className="group">
           <Stat
-            label="Shortlisted"
-            value={applications.filter((application) => ['Shortlisted', 'Hired', 'accepted'].includes(application.status)).length}
+            label="Hired"
+            value={hiredCount}
             icon={Award}
             tone="emerald"
           />
         </Link>
         <Link to={ROUTES.RECRUITER.ANALYTICS} className="group">
           <Stat label="Avg Match Score" value={applications.length > 0 ? `${averageMatchScore}%` : '--'} icon={TrendingUp} tone="violet" />
+        </Link>
+        <Link to={ROUTES.RECRUITER.RANKINGS} className="group">
+          <Stat label="Screening" value={screeningCount} icon={Star} tone="amber" />
         </Link>
       </section>
 
@@ -160,29 +186,39 @@ function RecruiterDashboard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {topProjects.slice(0, 4).map((project) => (
-              <Link key={project._id} to={ROUTES.RECRUITER.PORTFOLIO} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-colors hover:bg-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
-                    <FolderKanban className="h-4 w-4" />
+            {topProjects.slice(0, 4).map((project) => {
+              const candidateId = typeof project.userId === 'object' ? project.userId?._id : project.userId
+              const intelligenceUrl = candidateId
+                ? `/recruiter/candidates/${candidateId}/intelligence`
+                : ROUTES.RECRUITER.PORTFOLIO
+
+              return (
+                <Link key={project._id} to={intelligenceUrl} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 transition-colors hover:bg-slate-100 group">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-blue-50 p-2 text-blue-600 group-hover:bg-blue-100 transition-colors">
+                      <FolderKanban className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{project.title}</p>
+                      <p className="text-xs text-slate-400">
+                        {typeof project.userId === 'object' ? project.userId.name : 'Candidate'}
+                        {project.technologies?.length > 0 && ` - ${project.technologies.slice(0, 3).join(', ')}`}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">{project.title}</p>
-                    <p className="text-xs text-slate-400">
-                      {typeof project.userId === 'object' ? project.userId.name : 'Candidate'}
-                      {project.technologies?.length > 0 && ` - ${project.technologies.slice(0, 3).join(', ')}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {project.projectScore?.portfolioScore > 0 && (
-                    <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-600">
-                      <Star className="h-3 w-3" /> {project.projectScore.portfolioScore}
+                  <div className="flex items-center gap-2">
+                    {project.projectScore?.portfolioScore > 0 && (
+                      <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-600">
+                        <Star className="h-3 w-3" /> {project.projectScore.portfolioScore}
+                      </span>
+                    )}
+                    <span className="text-xs font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      View Profile &rarr;
                     </span>
-                  )}
-                </div>
-              </Link>
-            ))}
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         )}
       </section>
@@ -209,27 +245,35 @@ function RecruiterDashboard() {
             <p className="py-8 text-center text-sm text-slate-400">No applications received yet.</p>
           ) : (
             <div className="divide-y divide-slate-100">
-              {applications.slice(0, 4).map((application) => (
-                <Link key={application._id} to={ROUTES.RECRUITER.APPLICATIONS} className="flex items-center justify-between py-3 transition-colors hover:bg-slate-50 -mx-2 px-2 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
-                      <Users className="h-4 w-4" />
+              {applications.slice(0, 4).map((application) => {
+                const candidateId = application.candidateId?._id || application.candidateId
+                const jobId = application.jobId?._id || application.jobId
+                const intelligenceUrl = candidateId
+                  ? `/recruiter/candidates/${candidateId}/intelligence${jobId ? `?jobId=${jobId}` : ''}`
+                  : ROUTES.RECRUITER.APPLICATIONS
+
+                return (
+                  <Link key={application._id} to={intelligenceUrl} className="flex items-center justify-between py-3 transition-colors hover:bg-slate-50 -mx-2 px-2 rounded-xl group">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl bg-blue-50 p-2 text-blue-600 group-hover:bg-blue-100 transition-colors">
+                        <Users className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">{application.candidateName || 'Candidate'}</p>
+                        <p className="text-xs text-slate-400">{application.jobTitle || 'Position'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">{application.candidateName || 'Candidate'}</p>
-                      <p className="text-xs text-slate-400">{application.jobTitle || 'Position'}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                        {application.status || 'Applied'}
+                      </span>
+                      {application.matchScore ? (
+                        <span className="text-xs font-bold text-blue-600">{application.matchScore}%</span>
+                      ) : null}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
-                      {application.status || 'Applied'}
-                    </span>
-                    {application.matchScore ? (
-                      <span className="text-xs font-bold text-blue-600">{application.matchScore}%</span>
-                    ) : null}
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                )
+              })}
             </div>
           )}
         </div>
@@ -259,8 +303,42 @@ function RecruiterDashboard() {
                   Average match score is <strong>{averageMatchScore}%</strong>. Use rankings and job match to prioritize interviews.
                 </p>
               </Link>
+              <Link to={ROUTES.RECRUITER.RANKINGS} className="flex items-start gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 transition-colors hover:bg-white/10">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-emerald-300">3</div>
+                <p>
+                  <strong>{interviewCount}</strong> candidates in interview stage. <strong>{hiredCount}</strong> hired so far.
+                </p>
+              </Link>
             </div>
           </div>
+
+          {/* Top Skills from Applications */}
+          {topSkills.length > 0 && (
+            <div className="space-y-4 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Top Skills in Demand</h3>
+                  <p className="text-xs text-slate-400">Most matched skills across applications</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {topSkills.map(({ skill, count }) => (
+                  <div key={skill} className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700 capitalize">{skill}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-24 rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-blue-500"
+                          style={{ width: `${Math.min(100, (count / applications.length) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400">{count}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-4 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">

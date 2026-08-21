@@ -18,6 +18,7 @@ import CandidateCopilot from '../pages/CandidateCopilot'
 import LearningRoadmap from '../pages/LearningRoadmap'
 import CodingProfile from '../pages/CodingProfile'
 import ProjectDetails from '../pages/ProjectDetails'
+import ResumeBuilder from '../pages/ResumeBuilder'
 
 function CandidateRoutes() {
   return (
@@ -38,6 +39,7 @@ function CandidateRoutes() {
       <Route path={ROUTES.CANDIDATE.RESUME_ANALYSIS} element={<ResumeUpload />} />
       <Route path={ROUTES.CANDIDATE.JOB_MATCH} element={<CandidateJobMatch />} />
       <Route path={ROUTES.CANDIDATE.CAREER_INSIGHTS} element={<CareerInsights />} />
+      <Route path={ROUTES.CANDIDATE.RESUME_BUILDER} element={<ResumeBuilder />} />
       <Route path={ROUTES.CANDIDATE.PROFILE} element={<Navigate to={ROUTES.CANDIDATE.PORTFOLIO} replace />} />
       <Route path={ROUTES.CANDIDATE.PORTFOLIO} element={<Portfolio role="candidate" section="overview" />} />
       <Route path={ROUTES.CANDIDATE.PORTFOLIO_RESUME} element={<Portfolio role="candidate" section="resume" />} />

@@ -72,9 +72,11 @@ async def job_match(request: JobMatchRequest):
         semantic_similarity=semantic_match["similarity_score"],
     )
 
-    # Reuse existing final score calculation - identical to Flask
+    skill_match_score = enhanced_gaps["match_percentage"]
+
+    # Final match score: required-skill coverage + vector similarity, bounded to 0-100.
     final_score = calculate_final_score(
-        len(candidate_skills) * 10,
+        skill_match_score,
         similarity_score,
     )
 
@@ -82,6 +84,14 @@ async def job_match(request: JobMatchRequest):
         data={
             "similarity": similarity_score,
             "finalScore": final_score,
+            "score_breakdown": {
+                "skill_match_score": skill_match_score,
+                "similarity_score": similarity_score,
+                "weights": {
+                    "skills": 0.6,
+                    "similarity": 0.4,
+                },
+            },
             "matchedSkills": enhanced_gaps["matched"],
             "missingSkills": enhanced_gaps["missing"],
             "candidateSkills": candidate_skills,

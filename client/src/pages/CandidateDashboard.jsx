@@ -14,6 +14,7 @@ import {
   Star,
   TrendingUp,
   XCircle,
+  FileEdit,
 } from 'lucide-react'
 import ROUTES from '../constants/routes'
 import { AuthContext } from '../context/authContext'
@@ -322,6 +323,28 @@ function CandidateDashboard() {
             </Link>
           ))
         )}
+      </section>
+
+      {/* Resume Builder Widget */}
+      <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 p-3 text-white shadow-lg shadow-blue-500/20">
+              <FileEdit className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Resume Builder</h3>
+              <p className="text-xs text-slate-400">Build an ATS-friendly resume from your profile</p>
+            </div>
+          </div>
+          <Link
+            to={ROUTES.CANDIDATE.RESUME_BUILDER}
+            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 hover:bg-blue-500 transition-colors"
+          >
+            <FileEdit className="h-4 w-4" />
+            Build Resume
+          </Link>
+        </div>
       </section>
     </main>
   )
