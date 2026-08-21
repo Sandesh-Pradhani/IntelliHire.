@@ -2,11 +2,6 @@ import { useEffect, useState } from 'react'
 import { CheckCircle2, CircleAlert, Lightbulb, Network, Radar, Sparkles, TrendingUp } from 'lucide-react'
 import http from '../services/http.service'
 
-const scoreLabels = {
-  ats: 'ATS', technical: 'Technical', communication: 'Communication', project: 'Projects',
-  learning: 'Learning', growth: 'Growth', confidence: 'Confidence', employability: 'Employability',
-}
-
 function CandidateTwin() {
   const [twin, setTwin] = useState(null)
   const [error, setError] = useState('')
@@ -25,6 +20,15 @@ function CandidateTwin() {
   const resumeTimeline = twin.resumeTimeline || []
   const insights = twin.insights || { strengths: [], improvements: [] }
   const purpose = twin.purpose || 'Your digital twin is being built as you add career evidence.'
+  const metricCards = [
+    { key: 'employability', label: 'Employability Signal', score: scores.employability ?? 0, highlight: true },
+    { key: 'ats', label: 'ATS Score', score: scores.ats ?? 0 },
+    { key: 'skillMatch', label: 'Skill Match', score: scores.skillMatch ?? scores.technical ?? 0 },
+    { key: 'verificationTrust', label: 'Verification / Trust Score', score: scores.verificationTrust ?? scores.confidence ?? 0 },
+    { key: 'projectPortfolio', label: 'Project Portfolio', score: scores.projectPortfolio ?? scores.project ?? 0 },
+    { key: 'academicCredentials', label: 'Academic Credentials', score: scores.academicCredentials ?? scores.academic ?? 0 },
+    { key: 'activityGraphEvidence', label: 'Activity / Graph Evidence', score: scores.activityGraphEvidence ?? scores.activity ?? 0 },
+  ]
 
   return (
     <main className="space-y-7 pb-12 animate-fade-in">
@@ -40,7 +44,14 @@ function CandidateTwin() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Object.entries(scores).map(([key, score]) => <ScoreCard key={key} label={scoreLabels[key]} score={score} highlight={key === 'employability'} />)}
+        {metricCards.map((metric) => (
+          <ScoreCard
+            key={metric.key}
+            label={metric.label}
+            score={metric.score}
+            highlight={metric.highlight}
+          />
+        ))}
       </section>
 
       <section className="grid gap-7 lg:grid-cols-5">
@@ -62,6 +73,20 @@ function CandidateTwin() {
   )
 }
 
-function ScoreCard({ label, score, highlight }) { return <div className={`rounded-2xl border p-5 shadow-sm ${highlight ? 'border-indigo-200 bg-indigo-600 text-white' : 'border-slate-100 bg-white'}`}><p className={`text-xs font-bold uppercase tracking-wider ${highlight ? 'text-indigo-100' : 'text-slate-400'}`}>{label}</p><div className="mt-2 flex items-end justify-between"><p className="text-3xl font-black">{score}<span className="text-base">%</span></p><div className={`h-2 w-16 rounded-full ${highlight ? 'bg-white/25' : 'bg-slate-100'}`}><div className={`h-2 rounded-full ${highlight ? 'bg-cyan-300' : 'bg-indigo-500'}`} style={{ width: `${score}%` }} /></div></div></div> }
+function ScoreCard({ label, score, highlight }) {
+  const displayScore = Math.max(0, Math.min(100, Number(score) || 0))
+
+  return (
+    <div className={`rounded-2xl border p-5 shadow-sm ${highlight ? 'border-indigo-200 bg-indigo-600 text-white' : 'border-slate-100 bg-white'}`}>
+      <p className={`min-h-8 text-xs font-bold uppercase leading-4 tracking-wider ${highlight ? 'text-indigo-100' : 'text-slate-400'}`}>{label}</p>
+      <div className="mt-3 flex items-end justify-between gap-4">
+        <p className="text-3xl font-black leading-none">{displayScore}<span className="text-base">%</span></p>
+        <div className={`h-2 w-16 shrink-0 rounded-full ${highlight ? 'bg-white/25' : 'bg-slate-100'}`}>
+          <div className={`h-2 rounded-full ${highlight ? 'bg-cyan-300' : 'bg-indigo-500'}`} style={{ width: `${displayScore}%` }} />
+        </div>
+      </div>
+    </div>
+  )
+}
 function InsightCard({ icon: Icon, title, items, empty, tone }) { const color = tone === 'emerald' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'; return <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm"><div className="flex items-center gap-2"><div className={`rounded-xl p-2 ${color}`}><Icon className="h-5 w-5" /></div><h2 className="font-bold text-slate-900">{title}</h2></div><div className="mt-5 space-y-3">{items.length ? items.map((item) => <p key={item} className="rounded-xl bg-slate-50 p-3 text-sm leading-5 text-slate-600">{item}</p>) : <p className="py-4 text-sm text-slate-400">{empty}</p>}</div></section> }
 export default CandidateTwin
