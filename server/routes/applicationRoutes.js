@@ -1,282 +1,92 @@
-const express = require('express')
-const Application = require('../models/Application')
-const authMiddleware = require('../middleware/authMiddleware')
+const express = require('express');
+const Application = require('../models/Application');
+const Notification = require('../models/Notification');
+const authMiddleware = require('../middleware/authMiddleware');
+const { requireRole } = require('../middleware/roleMiddleware');
+const router = express.Router();
 
-const router = express.Router()
+router.get('/recruiter', authMiddleware, requireRole('recruiter'), async (req, res) => {
+  try {
+    const apps = await Application.find().populate('candidateId','name email').populate('jobId','title company').sort({createdAt:-1});
+    res.json(apps);
+  } catch(e) { res.status(500).json({message:'Failed'}); }
+});
 
-/**
- * GET /api/applications
- * Returns all applications with populated candidate, job, resume data
- * Sorted by newest first
- */
-router.get(
-    '/',
-    authMiddleware,
-    async (req, res) => {
-        try {
-            const applications = await Application.find()
-                .populate('candidate', 'name email')
-                .populate('job', 'title company description requiredSkills')
-                .populate('resume', 'fileName extractedSkills atsScore')
-                .sort({ createdAt: -1 })
+router.get('/candidate', authMiddleware, requireRole('candidate'), async (req, res) => {
+  try {
+    const apps = await Application.find({candidateId:req.user.id}).populate('jobId','title company location jobType salaryMin salaryMax').sort({createdAt:-1});
+    res.json(apps);
+  } catch(e) { res.status(500).json({message:'Failed'}); }
+});
 
-            res.json(applications)
-        } catch (error) {
-            console.error('[Applications GET Error]:', error)
-            res.status(500).json({
-                message: 'Failed to fetch applications'
-            })
-        }
-    }
-)
+router.post('/apply', authMiddleware, requireRole('candidate'), async (req, res) => {
+  try {
+    const {jobId,resumeId}=req.body;
+    const Job=require('../models/Job'), Resume=require('../models/Resume'), User=require('../models/User');
+    const job=await Job.findById(jobId);
+    if(!job) return res.status(404).json({message:'Job not found'});
+    if(job.status!=='active') return res.status(400).json({message:'Job closed'});
+    const existing=await Application.findOne({candidateId:req.user.id,jobId});
+    if(existing) return res.status(400).json({message:'Already applied'});
+    const user=await User.findById(req.user.id);
+    const resume=resumeId?await Resume.findById(resumeId):null;
+    const app=await Application.create({
+      candidateId:req.user.id, resumeId:resumeId||undefined, jobId,
+      candidateName:user?.name||'Unknown', candidateEmail:user?.email||'Unknown',
+      jobTitle:job.title||'Unknown', atsScore:resume?.atsScore||0,
+      matchedSkills:resume?.extractedSkills||[], status:'Applied',
+      timeline:[{status:'Applied',changedBy:'candidate',note:'Submitted'}]
+    });
+    await Job.findByIdAndUpdate(jobId,{$inc:{applicantsCount:1}});
+    try{await Notification.create({userId:job.postedBy,type:'application',title:'New Application',message:user?.name+' applied for '+job.title,link:'/applications',relatedId:app._id});}catch(_){}
+    res.status(201).json(app);
+  } catch(e) { res.status(500).json({message:'Failed'}); }
+});
 
-/**
- * GET /api/applications/stats
- * Returns aggregate stats for the ATS dashboard
- */
-router.get(
-    '/stats',
-    authMiddleware,
-    async (req, res) => {
-        try {
-            const [
-                totalApplications,
-                statusCounts,
-                avgMatchScore,
-                totalJobs,
-                totalResumes
-            ] = await Promise.all([
-                Application.countDocuments(),
-                Application.aggregate([
-                    {
-                        $group: {
-                            _id: '$status',
-                            count: { $sum: 1 }
-                        }
-                    }
-                ]),
-                Application.aggregate([
-                    {
-                        $group: {
-                            _id: null,
-                            averageScore: { $avg: '$matchScore' }
-                        }
-                    }
-                ]),
-                // These are separate counts - we import the models
-                require('../models/Job').countDocuments(),
-                require('../models/Resume').countDocuments()
-            ])
+router.put('/withdraw/:id', authMiddleware, requireRole('candidate'), async (req, res) => {
+  try {
+    const app=await Application.findById(req.params.id);
+    if(!app) return res.status(404).json({message:'Not found'});
+    if(app.candidateId.toString()!==req.user.id) return res.status(403).json({message:'Access denied'});
+    if(['Rejected','Hired'].includes(app.status)) return res.status(400).json({message:'Cannot withdraw'});
+    app.status='Rejected'; app.timeline.push({status:'Rejected',changedBy:'candidate',note:'Withdrawn'});
+    await app.save();
+    res.json({message:'Withdrawn'});
+  } catch(e) { res.status(500).json({message:'Failed'}); }
+});
 
-            // Build status map with defaults
-            const statusMap = {
-                Applied: 0,
-                Shortlisted: 0,
-                Interview: 0,
-                Rejected: 0,
-                Hired: 0
-            }
+router.put('/status/:id', authMiddleware, requireRole('recruiter'), async (req, res) => {
+  try {
+    const {status,note}=req.body;
+    const valid=['Applied','Screening','Shortlisted','Interview','Selected','Rejected','Hired'];
+    if(!valid.includes(status)) return res.status(400).json({message:'Invalid'});
+    const app=await Application.findById(req.params.id);
+    if(!app) return res.status(404).json({message:'Not found'});
+    app.status=status; app.timeline.push({status,changedBy:'recruiter',note:note||'To '+status});
+    if(note) app.recruiterNotes=note;
+    await app.save();
+    try{await Notification.create({userId:app.candidateId,type:'status_update',title:'Status Updated',message:app.jobTitle+' -> '+status,link:'/candidate/applications',relatedId:app._id});}catch(_){}
+    res.json(app);
+  } catch(e) { res.status(500).json({message:'Failed'}); }
+});
 
-            statusCounts.forEach(item => {
-                statusMap[item._id] = item.count
-            })
+router.get('/stats', authMiddleware, requireRole('recruiter'), async (req, res) => {
+  try {
+    const total=await Application.countDocuments();
+    const sc=await Application.aggregate([{$group:{_id:'$status',count:{$sum:1}}}]);
+    const counts={}; sc.forEach(s=>counts[s._id]=s.count);
+    const avg=await Application.aggregate([{$match:{matchScore:{$gt:0}}},{$group:{_id:null,avg:{$avg:'$matchScore'}}}]);
+    res.json({total,statusCounts:counts,averageMatchScore:avg.length?Math.round(avg[0].avg):0});
+  } catch(e) { res.status(500).json({message:'Failed'}); }
+});
 
-            res.json({
-                totalApplications,
-                statusCounts: statusMap,
-                averageMatchScore: avgMatchScore.length > 0
-                    ? Math.round(avgMatchScore[0].averageScore * 10) / 10
-                    : 0,
-                totalJobs,
-                totalResumes
-            })
-        } catch (error) {
-            console.error('[Applications Stats Error]:', error)
-            res.status(500).json({
-                message: 'Failed to fetch application stats'
-            })
-        }
-    }
-)
+router.get('/candidate/stats', authMiddleware, requireRole('candidate'), async (req, res) => {
+  try {
+    const apps=await Application.find({candidateId:req.user.id});
+    const counts={}; let ts=0,mc=0;
+    apps.forEach(a=>{counts[a.status]=(counts[a.status]||0)+1;if(a.matchScore>0){ts+=a.matchScore;mc++;}});
+    res.json({total:apps.length,statusCounts:counts,averageMatchScore:mc?Math.round(ts/mc):0});
+  } catch(e) { res.status(500).json({message:'Failed'}); }
+});
 
-/**
- * GET /api/applications/:id
- * Returns a single application by ID
- */
-router.get(
-    '/:id',
-    authMiddleware,
-    async (req, res) => {
-        try {
-            const application = await Application.findById(req.params.id)
-                .populate('candidate', 'name email')
-                .populate('job', 'title company description requiredSkills')
-                .populate('resume', 'fileName extractedSkills atsScore')
-
-            if (!application) {
-                return res.status(404).json({
-                    message: 'Application not found'
-                })
-            }
-
-            res.json(application)
-        } catch (error) {
-            console.error('[Applications GET By ID Error]:', error)
-            res.status(500).json({
-                message: 'Failed to fetch application'
-            })
-        }
-    }
-)
-
-/**
- * PATCH /api/applications/:id/status
- * Update application status
- */
-router.patch(
-    '/:id/status',
-    authMiddleware,
-    async (req, res) => {
-        try {
-            const { status } = req.body
-
-            const validStatuses = [
-                'Applied',
-                'Shortlisted',
-                'Interview',
-                'Rejected',
-                'Hired'
-            ]
-
-            if (!validStatuses.includes(status)) {
-                return res.status(400).json({
-                    message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
-                })
-            }
-
-            const application = await Application.findByIdAndUpdate(
-                req.params.id,
-                { status },
-                { new: true }
-            )
-                .populate('candidate', 'name email')
-                .populate('job', 'title company')
-                .populate('resume', 'fileName')
-
-            if (!application) {
-                return res.status(404).json({
-                    message: 'Application not found'
-                })
-            }
-
-            res.json(application)
-        } catch (error) {
-            console.error('[Applications Status Update Error]:', error)
-            res.status(500).json({
-                message: 'Status update failed'
-            })
-        }
-    }
-)
-
-/**
- * DELETE /api/applications/:id
- * Delete an application
- */
-router.delete(
-    '/:id',
-    authMiddleware,
-    async (req, res) => {
-        try {
-            const application = await Application.findByIdAndDelete(req.params.id)
-
-            if (!application) {
-                return res.status(404).json({
-                    message: 'Application not found'
-                })
-            }
-
-            res.json({
-                message: 'Application deleted successfully'
-            })
-        } catch (error) {
-            console.error('[Applications DELETE Error]:', error)
-            res.status(500).json({
-                message: 'Failed to delete application'
-            })
-        }
-    }
-)
-
-/**
- * POST /api/applications
- * Manually create an application (for backward compatibility)
- */
-router.post(
-    '/',
-    authMiddleware,
-    async (req, res) => {
-        try {
-            const {
-                candidateId,
-                resumeId,
-                jobId,
-                candidateName,
-                candidateEmail,
-                jobTitle,
-                atsScore,
-                matchScore,
-                matchedSkills,
-                missingSkills,
-                status
-            } = req.body
-
-            if (!candidateId || !jobId) {
-                return res.status(400).json({
-                    message: 'candidateId and jobId are required'
-                })
-            }
-
-            // Check for duplicate
-            const existing = await Application.findOne({
-                candidate: candidateId,
-                job: jobId
-            })
-
-            if (existing) {
-                return res.status(409).json({
-                    message: 'Application already exists for this candidate and job',
-                    application: existing
-                })
-            }
-
-            const application = await Application.create({
-                candidate: candidateId,
-                resume: resumeId,
-                job: jobId,
-                candidateName: candidateName || 'Unknown',
-                candidateEmail: candidateEmail || 'Unknown',
-                jobTitle: jobTitle || 'Unknown',
-                atsScore: atsScore || 0,
-                matchScore: matchScore || 0,
-                matchedSkills: matchedSkills || [],
-                missingSkills: missingSkills || [],
-                status: status || 'Applied'
-            })
-
-            const populated = await Application.findById(application._id)
-                .populate('candidate', 'name email')
-                .populate('job', 'title company')
-                .populate('resume', 'fileName')
-
-            res.status(201).json(populated)
-        } catch (error) {
-            console.error('[Applications POST Error]:', error)
-            res.status(500).json({
-                message: 'Failed to create application'
-            })
-        }
-    }
-)
-
-module.exports = router
+module.exports = router;

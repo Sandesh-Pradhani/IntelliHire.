@@ -14,7 +14,9 @@ const matchCandidate = async (payload) => {
             payload
         )
 
-        return response.data
+        // FastAPI returns a standard envelope: { success, data, message, execution_time, model_used }
+        // Extract the data field so callers get the match payload directly.
+        return response.data.data || response.data
 
     } catch (error) {
 

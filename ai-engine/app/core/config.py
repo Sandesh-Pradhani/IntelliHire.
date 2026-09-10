@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # Application metadata
     APP_NAME: str = "IntelliHire AI Engine"
-    APP_VERSION: str = "5.0.0"
+    APP_VERSION: str = "6.0.0"
     APP_DESCRIPTION: str = "AI-powered resume analysis, skill extraction, job matching, and candidate ranking engine"
 
     # Server configuration
