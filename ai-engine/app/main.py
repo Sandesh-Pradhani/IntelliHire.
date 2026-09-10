@@ -43,6 +43,7 @@ from app.routers import candidate_recommendations as candidate_recommendations_r
 from app.routers import coding_profile as coding_profile_router
 from app.routers import project_scoring as project_scoring_router
 from app.routers import resume_builder as resume_builder_router
+from app.routers import certificate_scoring as certificate_scoring_router
 from app.utils.exceptions import generic_exception_handler, http_exception_handler, validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException
@@ -138,3 +139,4 @@ app.include_router(candidate_recommendations_router.router)
 app.include_router(coding_profile_router.router)
 app.include_router(project_scoring_router.router)
 app.include_router(resume_builder_router.router)
+app.include_router(certificate_scoring_router.router)

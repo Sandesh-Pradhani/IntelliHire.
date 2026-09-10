@@ -22,6 +22,7 @@ import {
   MessageSquare,
   Code2,
   FileEdit,
+  Award,
 } from 'lucide-react'
 
 const CANDIDATE_MENU = [
@@ -55,6 +56,7 @@ const CANDIDATE_MENU = [
       { path: ROUTES.CANDIDATE.RESUME_BUILDER, label: 'Resume Builder', icon: FileEdit },
       { path: ROUTES.CANDIDATE.CAREER_INSIGHTS, label: 'Career Insights', icon: TrendingUp },
       { path: ROUTES.CANDIDATE.CODING_PROFILE, label: 'Coding Profile', icon: Code2 },
+      { path: ROUTES.CANDIDATE.PORTFOLIO_CERTIFICATES, label: 'Certificates', icon: Award },
     ],
   },
   {

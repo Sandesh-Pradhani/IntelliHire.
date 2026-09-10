@@ -53,22 +53,22 @@ export const portfolioService = {
 
   // Certificates
   async getCertificates() {
-    const res = await http.get('/api/portfolio/certificates')
+    const res = await http.get('/api/certificates')
     return res.data
   },
 
   async createCertificate(data) {
-    const res = await http.post('/api/portfolio/certificates', data)
+    const res = await http.post('/api/certificates', data)
     return res.data
   },
 
   async updateCertificate(id, data) {
-    const res = await http.put(`/api/portfolio/certificates/${id}`, data)
+    const res = await http.put(`/api/certificates/${id}`, data)
     return res.data
   },
 
   async deleteCertificate(id) {
-    const res = await http.delete(`/api/portfolio/certificates/${id}`)
+    const res = await http.delete(`/api/certificates/${id}`)
     return res.data
   },
 

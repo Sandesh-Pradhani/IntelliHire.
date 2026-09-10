@@ -24,6 +24,7 @@ const organizationRoutes = require('./routes/organizationRoutes')
 const codingProfileRoutes = require('./routes/codingProfileRoutes')
 const recruiterProjectRoutes = require('./routes/recruiterProjectRoutes')
 const resumeBuilderRoutes = require('./routes/resumeBuilderRoutes')
+const certificateRoutes = require('./routes/certificateRoutes')
 
 connectDB()
 
@@ -45,6 +46,7 @@ app.use(cors({
 }))
 
 app.use(express.json())
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 
 app.use('/api/auth', authRoutes)
 app.use('/api/ai', aiRoutes)
@@ -65,6 +67,7 @@ app.use('/api/organizations', organizationRoutes)
 app.use('/api/coding-profile', codingProfileRoutes)
 app.use('/api/recruiter/portfolio', recruiterProjectRoutes)
 app.use('/api/resume-builder', resumeBuilderRoutes)
+app.use('/api/certificates', certificateRoutes)
 
 app.get('/', (req, res) => {
     res.send('IntelliHire Backend Running')

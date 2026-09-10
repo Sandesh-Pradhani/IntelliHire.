@@ -69,19 +69,20 @@ async def coding_score(request: CodingScoreRequest):
 
 @router.post(
     "/unified-score",
-    summary="Calculate unified candidate score with coding and project integration",
+    summary="Calculate unified candidate score with coding, project, and certificate integration",
 )
 async def unified_score(request: dict):
     """
     Calculate the unified candidate score integrating ATS, Semantic, Academic,
-    Coding, and Project scores.
+    Coding, Project, and Certificate scores.
 
-    Weights (V5.3):
-    - Semantic: 30%
-    - ATS: 20%
-    - Academic: 15%
-    - Coding: 20%
-    - Projects: 15%
+    Weights (V5.4):
+    - Semantic: 28%
+    - ATS: 18%
+    - Academic: 14%
+    - Coding: 18%
+    - Projects: 14%
+    - Certificates: 8%
     """
     start = time.perf_counter()
 
@@ -90,6 +91,7 @@ async def unified_score(request: dict):
     academic_score = request.get("academicScore", 0)
     coding_score = request.get("codingScore", 0)
     project_score = request.get("projectScore", 0)
+    certificate_score = request.get("certificateScore", 0)
 
     result = calculate_unified_candidate_score(
         ats_score=ats_score,
@@ -97,6 +99,7 @@ async def unified_score(request: dict):
         academic_score=academic_score,
         coding_score=coding_score,
         project_score=project_score,
+        certificate_score=certificate_score,
     )
 
     return success_response(
