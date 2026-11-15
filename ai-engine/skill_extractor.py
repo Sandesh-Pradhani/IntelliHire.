@@ -244,14 +244,21 @@ for category, skills in SKILL_DATABASE.items():
 SKILL_ALIASES = {
     "reactjs": "react",
     "react.js": "react",
+    "react js": "react",
     "vuejs": "vue",
     "vue.js": "vue",
+    "vue js": "vue",
+    "node": "node.js",
     "nodejs": "node.js",
     "node.js": "node.js",
+    "node js": "node.js",
     "expressjs": "express",
     "express.js": "express",
+    "express js": "express",
     "nextjs": "next.js",
     "next.js": "next.js",
+    "next js": "next.js",
+    "java script": "javascript",
     "golang": "go",
     "js": "javascript",
     "ts": "typescript",
@@ -287,6 +294,85 @@ SKILL_ALIASES = {
     "dast": "dynamic application security testing",
 }
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Step 14 — Ambiguous-token handling (boundary-aware matching)
+#
+# WHAT PROBLEM IT SOLVES:
+# The original extractor used `skill in text_lower` (raw substring). That made
+# single-character and short skills match inside unrelated words:
+#   'c'   -> "Car", "Chartered", "Machine"       (programming language = FALSE)
+#   'r'   -> "Guitar", "React", "Accountant"     (programming language = FALSE)
+#   'gin' -> "Engineer"                           (Go framework  = FALSE)
+#   'ha'  -> "Chartered"                          (high availability = FALSE)
+#   'ui'  -> "Guitar", "Requirements"             (user interface = FALSE)
+#
+# WHY THIS APPROACH:
+# Only genuinely ambiguous SHORT tokens need boundary logic. Multi-word phrases
+# ("machine learning", "power bi") keep the original fast substring behaviour so
+# legitimate recall is preserved. Deliberately a targeted fix, not a rewrite.
+#
+# ALTERNATIVES CONSIDERED:
+# - Removing all one-character skills: REJECTED — C and R are legitimate,
+#   frequently-required programming languages.
+# - Full spaCy NER for every skill: REJECTED — slower, unnecessary; only short
+#   tokens are ambiguous.
+# - Boundaries for ALL skills: REJECTED — would drop valid matches such as
+#   "python" inside "python3".
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Skills that must ONLY match as whole tokens (case-insensitive). Short tokens
+# whose substrings collide with ordinary English words.
+BOUNDARY_SKILLS = {
+    "c", "r", "go", "f#",
+    "gin", "echo", "fiber", "revel", "plug", "rocket", "tower", "axum",
+    "ha", "eda", "ddd", "cqrs", "cv", "ml", "nlp", "ui", "ux", "api",
+    "iam", "ids", "ips", "soc", "sre", "iac", "csm", "psm", "pmp",
+    "tdd", "bdd", "csp", "sast", "dast", "siem",
+    "sas", "spss", "dbt", "elt", "etl", "soap", "grpc", "lambda",
+    # Step 14b: aliases that are themselves dangerous substrings.
+    # e.g. alias 'ts' -> typescript matched "Requiremen[ts] gathering";
+    # alias 'py'/'js'/'ui'/'ux'/'api'/'ml'/'cv'/'ha' collide with English
+    # fragments. Aliases are matched through _match_skill too, so listing them
+    # here forces whole-token matching for the alias as well.
+    "ts", "js", "py", "ux",
+    # v2 scoring contract: ordinary-word collisions verified during the
+    # scoring audit. These must be whole tokens, otherwise:
+    #   "JavaScript" -> java, "payroll laws" -> aws,
+    #   "reactive" -> react, "Node.js" -> javascript (via the 'js' alias).
+    "java", "javascript", "aws", "react", "node", "express", "git",
+}
+
+# Contextual spellings that legitimately mean C / R and must still be found.
+CONTEXTUAL_SKILL_PATTERNS = {
+    "c": [
+        r'\bc\s*/\s*c\+\+',              # C/C++
+        r'\bc\s*/\s*c\s*#',              # C/C#
+        r'\bc\s+programming\b',          # C programming
+        r'\bc\s+language\b',             # C language
+        r'\bc\s+developer\b',
+        r'\bc\s+engineer\b',
+        r'\b(?:in|with|using|and|or)\s+c\b(?!\s*[+#])',   # "...using C"
+        r'(?<![\w+#])c(?![\w+#])',       # standalone "C"
+    ],
+    "r": [
+        r'\br\s+programming\b',          # R programming
+        r'\br\s+language\b',             # R language
+        r'\br\s+statistics\b',
+        r'\br\s+and\s+python\b',
+        r'\bpython\s+and\s+r\b',
+        r'(?<![\w&#])r(?![\w&#])',       # standalone "R"
+    ],
+}
+
+# Canonical token forms matched with strict word boundaries.
+TOKEN_SKILL_PATTERNS = {
+    "c++": [r'c\+\+'],
+    "c#": [r'c#', r'\bc\s*sharp\b'],
+    "objective-c": [r'\bobjective-c\b', r'\bobjective\s+c\b'],
+    "f#": [r'f#', r'\bf\s*sharp\b'],
+    "t-sql": [r'\bt-sql\b', r'\btsql\b'],
+    "pl/sql": [r'\bpl/sql\b', r'\bplsql\b'],
+}
 # ── Experience indicators ──
 EXPERIENCE_PATTERNS = [
     r'(\d+)\+?\s*years?\s*(?:of\s+)?experience',
@@ -323,35 +409,116 @@ CERTIFICATION_INDICATORS = [
 ]
 
 
+def _match_skill(skill: str, text_lower: str) -> bool:
+    """Return True when `skill` is genuinely present in `text_lower`.
+
+    WHY: the original implementation used a raw `in` substring test, which let
+    one-character and short skills match inside unrelated words ('c' in "Car",
+    'r' in "Guitar", 'gin' in "Engineer"). Short/ambiguous tokens therefore use
+    word-boundary (or specialised contextual) matching, while longer phrases
+    keep the original fast substring behaviour.
+
+    This preserves legitimate detection of C, R, C++, C#, "C/C++", "C / C++",
+    "C programming" and "R programming" while removing substring noise.
+    """
+    skill_l = skill.lower()
+
+    # 1) Canonical token forms (c++, c#, f#, plumbing …) with boundaries.
+    if skill_l in TOKEN_SKILL_PATTERNS:
+        return any(re.search(p, text_lower) for p in TOKEN_SKILL_PATTERNS[skill_l])
+
+    # 2) Ambiguous short tokens: contextual patterns first, then hard boundaries.
+    if skill_l in BOUNDARY_SKILLS:
+        patterns = CONTEXTUAL_SKILL_PATTERNS.get(skill_l)
+        if patterns:
+            if any(re.search(p, text_lower) for p in patterns):
+                return True
+            return False
+        # No contextual list: require a whole-token match. The lookbehind also
+        # rejects a preceding dot so the 'js' alias does not match "Node.js"
+        # and 'py' does not match "script.py".
+        return re.search(r'(?<![\w+#/\.])' + re.escape(skill_l) + r'(?![\w+#])',
+                         text_lower) is not None
+
+    # 3) Everything else keeps the original substring semantics.
+    return skill_l in text_lower
+
+
 def extract_skills(text: str) -> List[str]:
     """
     Extract skills from text using comprehensive skill database.
-    
+
+    Step 14: ambiguous short tokens (C, R, Go, gin, HA, UI, …) are matched with
+    word boundaries instead of raw substrings; multi-word phrases keep the
+    original substring behaviour. See BOUNDARY_SKILLS / CONTEXTUAL_SKILL_PATTERNS.
+
     Args:
         text: Raw text to extract skills from
-        
+
     Returns:
         List of extracted skill names (normalized)
     """
     if not text or not text.strip():
         return []
-    
+
     text_lower = text.lower()
     extracted = set()
-    
-    # Direct matching against skill database
+
+    # Direct matching against skill database (boundary-aware for short tokens)
     for skill in ALL_SKILLS:
-        if skill.lower() in text_lower:
+        if _match_skill(skill, text_lower):
             # Normalize via aliases
             normalized = SKILL_ALIASES.get(skill.lower(), skill)
             extracted.add(normalized)
-    
+
     # Check for aliases (short forms)
     for alias, full in SKILL_ALIASES.items():
-        if alias in text_lower:
+        if _match_skill(alias, text_lower):
             extracted.add(full)
-    
+
+    # Alias-derived values are canonical names; make sure any canonical name
+    # produced by an alias is not re-introduced as a bare substring artefact.
     return sorted(list(extracted))
+
+
+def normalize_skill_name(skill: str) -> str:
+    """Normalize one authoritative skill value to its canonical name.
+
+    Used for arrays supplied by the Node server (Job.requiredSkills,
+    Job.essentialSkills, Resume.extractedSkills) where the value is already a
+    skill name rather than free prose. Normalization is intentionally exact:
+    it lowercases, collapses whitespace, strips list punctuation and applies
+    the same alias table as extract_skills(). It never performs substring
+    matching, so "digitalocean" is not silently expanded into other skills.
+
+    Examples:
+        "ReactJS"    -> "react"
+        "Node.js"    -> "node.js"
+        "Node"       -> "node.js"
+        "Express.js" -> "express"
+    """
+    value = re.sub(r'\s+', ' ', str(skill or '').strip().lower())
+    if not value:
+        return ''
+    value = value.strip(' ,;|')
+    return SKILL_ALIASES.get(value, value)
+
+
+def canonicalize_skills(skills: List[str]) -> List[str]:
+    """Return de-duplicated canonical skill names, preserving input order.
+
+    This is the single normalization boundary for authoritative skill arrays.
+    It intentionally does not use substring matching: aliases are resolved by
+    exact value so a value such as "Java" can never become "javascript".
+    """
+    canonical: List[str] = []
+    seen = set()
+    for skill in skills or []:
+        normalized = normalize_skill_name(skill)
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            canonical.append(normalized)
+    return canonical
 
 
 def extract_skills_with_categories(text: str) -> Dict[str, List[str]]:
@@ -373,7 +540,7 @@ def extract_skills_with_categories(text: str) -> Dict[str, List[str]]:
     for category, skills in SKILL_DATABASE.items():
         found = set()
         for skill in skills:
-            if skill.lower() in text_lower:
+            if _match_skill(skill, text_lower):
                 normalized = SKILL_ALIASES.get(skill.lower(), skill)
                 found.add(normalized)
         categorized[category] = sorted(list(found))
