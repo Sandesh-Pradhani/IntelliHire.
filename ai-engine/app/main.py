@@ -25,10 +25,20 @@ RISK ASSESSMENT:
 
 import time
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+# WHY load_dotenv BEFORE other project imports:
+# pydantic-settings only maps DECLARED Settings fields from .env; entries
+# like SBERT_MODEL_PATH / HF_HUB_OFFLINE must reach os.environ so module
+# code that reads env at call time (services.sbert_embeddings) sees them.
+# override=False keeps any explicitly-set environment (e.g. step-23 A/B
+# launcher scripts) authoritative over the file.
+from dotenv import load_dotenv
+load_dotenv(override=False)
 
 from app.core.config import settings
 from app.routers import resume as resume_router
@@ -71,6 +81,28 @@ async def lifespan(app: FastAPI):
     so no additional initialization is needed here.
     """
     logger.info(f"{settings.APP_NAME} v{settings.APP_VERSION} starting...")
+
+    # Fine-tuned SBERT V2 is opt-in through SBERT_MODEL_PATH. Log the active
+    # state once so a deployment can tell which semantic model will be used
+    # without calling /health first.
+    from services.sbert_embeddings import FINETUNED_ENV_VAR, get_finetuned_ab_path
+    v2_path = get_finetuned_ab_path()
+    if v2_path and os.path.isdir(v2_path):
+        logger.info("SBERT V2 enabled for the 40%% semantic component: %s", v2_path)
+    elif v2_path:
+        logger.warning(
+            "%s is set to %r but it is not a directory; SBERT V2 will fall "
+            "back to the base semantic model / TF-IDF.",
+            FINETUNED_ENV_VAR,
+            v2_path,
+        )
+    else:
+        logger.info(
+            "SBERT V2 disabled (%s is empty); job matching uses the base "
+            "semantic model and TF-IDF fallback.",
+            FINETUNED_ENV_VAR,
+        )
+
     yield
     logger.info(f"{settings.APP_NAME} shutting down...")
 
