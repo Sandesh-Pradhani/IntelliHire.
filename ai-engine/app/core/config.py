@@ -22,12 +22,14 @@ class Settings(BaseSettings):
 
     # Application metadata
     APP_NAME: str = "IntelliHire AI Engine"
-    APP_VERSION: str = "5.0.0"
+    APP_VERSION: str = "6.0.0"
     APP_DESCRIPTION: str = "AI-powered resume analysis, skill extraction, job matching, and candidate ranking engine"
 
     # Server configuration
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+
+    LLM_BASE_URL: str = "http://127.0.0.1:8080"
 
     # CORS - Allow all origins since this is an internal service
     # called by the Node.js backend proxy
@@ -39,6 +41,11 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        # .env also carries non-Settings keys (SBERT_MODEL_PATH,
+        # HF_HUB_OFFLINE, ...) consumed directly via os.environ by
+        # services.sbert_embeddings; without ignore=True the engine refuses
+        # to start once those keys exist.
+        extra = "ignore"
 
 
 settings = Settings()

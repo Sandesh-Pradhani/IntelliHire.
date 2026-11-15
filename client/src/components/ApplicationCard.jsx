@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { ChevronDown, User, Briefcase, Target, AlertTriangle, CheckCircle2, Clock, XCircle, UserCheck } from 'lucide-react'
+import { User, Briefcase, Target, AlertTriangle, CheckCircle2, Clock, XCircle, UserCheck, ChevronDown } from 'lucide-react'
 
 const STATUS_CONFIG = {
     Applied: { color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Clock },
@@ -9,13 +8,19 @@ const STATUS_CONFIG = {
     Hired: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle2 }
 }
 
+/**
+ * ApplicationCard — Card displaying candidate application summary.
+ * 
+ * The "Change Status" button triggers the parent's onStatusClick callback
+ * which opens a StatusModal (modal), avoiding clipping issues from overflow-hidden parents.
+ */
 function ApplicationCard({
     application,
     onStatusChange,
+    onStatusClick,
     isUpdating,
     onClick
 }) {
-    const [showDropdown, setShowDropdown] = useState(false)
     const statusConfig = STATUS_CONFIG[application.status] || STATUS_CONFIG.Applied
     const StatusIcon = statusConfig.icon
 
@@ -29,11 +34,6 @@ function ApplicationCard({
         if (score >= 60) return 'text-blue-600 bg-blue-50 border-blue-200'
         if (score >= 40) return 'text-amber-600 bg-amber-50 border-amber-200'
         return 'text-red-600 bg-red-50 border-red-200'
-    }
-
-    const handleStatusSelect = (status) => {
-        setShowDropdown(false)
-        onStatusChange(application._id, status)
     }
 
     return (
@@ -104,37 +104,30 @@ function ApplicationCard({
                     </div>
                 )}
 
-                {/* Status Dropdown */}
-                <div className="relative mt-4 ml-[34px]" onClick={(e) => e.stopPropagation()}>
+                {/* Actions: Change Status & View Intelligence */}
+                <div className="mt-4 ml-[34px] flex items-center gap-3">
                     <button
-                        onClick={() => setShowDropdown(!showDropdown)}
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            if (onStatusClick) {
+                                onStatusClick(application)
+                            }
+                        }}
                         disabled={isUpdating}
                         className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl transition-colors disabled:opacity-50"
                     >
                         {isUpdating ? 'Updating...' : 'Change Status'}
-                        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
+                        <ChevronDown className="h-3.5 w-3.5" />
                     </button>
 
-                    {showDropdown && (
-                        <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-20 min-w-[160px]">
-                            {Object.keys(STATUS_CONFIG).map((status) => {
-                                const cfg = STATUS_CONFIG[status]
-                                const Icon = cfg.icon
-                                const isActive = application.status === status
-                                return (
-                                    <button
-                                        key={status}
-                                        onClick={() => handleStatusSelect(status)}
-                                        className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold transition-colors hover:bg-slate-50 ${isActive ? 'text-blue-600 bg-blue-50' : 'text-slate-700'}`}
-                                    >
-                                        <Icon className="h-3.5 w-3.5" />
-                                        {status}
-                                        {isActive && <span className="ml-auto text-[10px] text-blue-500">●</span>}
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    )}
+                    <a
+                        href={`/recruiter/candidates/${application.candidateId?._id || application.candidateId}/intelligence${application.jobId ? `?jobId=${application.jobId?._id || application.jobId}` : ''}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                    >
+                        Intelligence Profile &rarr;
+                    </a>
                 </div>
             </div>
         </div>

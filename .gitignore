@@ -16,15 +16,32 @@ venv/
 .cd
 .qodo
 .clinerules
+.jetro
+.github
+!.github/
+!.github/workflows/
+!.github/workflows/ci.yml
+.cursor
+.windsurfrules
+.mcp.json
+.agents/
 
 # Build folders
 dist/
 build/
-
+projects/
+testservices.py
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+#MD file
+AGENT.md
+CLAUDE.md
+TODO.md
+task_progress.md
+
 
 # VS Code
 .vscode/
@@ -38,6 +55,10 @@ uploads/
 
 # AI Models
 *.pkl
+*.joblib
+*.onnx
+ai-engine/models/*
+!ai-engine/models/.gitkeep
 
 # Coverage
 coverage/

@@ -1,150 +1,36 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Navigate } from 'react-router-dom'
-
-import Navbar from './components/Navbar'
-import ProtectedRoute from './components/ProtectedRoute'
-
-import Login from './pages/Login'
-import Register from './pages/Register'
-import Dashboard from './pages/Dashboard'
-import ResumeUpload from './pages/ResumeUpload'
-import ResumeHistory from './pages/ResumeHistory'
-import Jobs from './pages/Jobs'
-import Rankings from './pages/Rankings'
-import Feedback from './pages/Feedback'
-import JobMatch from './pages/JobMatch'
-import Applications from './pages/Applications'
+import { useContext } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AuthContext } from './context/authContext.js'
+import ROUTES, { getDashboardRoute } from './constants/routes'
+import NotFound from './pages/NotFound'
+import AuthRoutes from './routes/AuthRoutes'
+import CandidateRoutes from './routes/CandidateRoutes'
+import RecruiterRoutes from './routes/RecruiterRoutes'
 
 function App() {
-
   return (
-
-    <BrowserRouter>
-
-      <Navbar />
-
-      <Routes>
-        
-        <Route
-          path="/"
-          element={<Navigate to="/login" />}
-        />
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        <Route
-          path="/register"
-          element={<Register />}
-        />
-
-        <Route
-
-          path="/dashboard"
-
-          element={
-
-            <ProtectedRoute>
-
-              <Dashboard />
-
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-
-          path="/resume-upload"
-
-          element={
-
-            <ProtectedRoute>
-
-              <ResumeUpload />
-
-            </ProtectedRoute>
-          }
-        />
-
-      <Route
-
-        path="/resume-history"
-
-        element={
-
-          <ProtectedRoute>
-
-            <ResumeHistory />
-
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-
-        path="/jobs"
-
-        element={
-
-          <ProtectedRoute>
-
-            <Jobs />
-
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-
-        path="/rankings"
-
-        element={
-
-          <ProtectedRoute>
-
-            <Rankings />
-
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-
-        path="/feedback"
-
-        element={
-
-          <ProtectedRoute>
-
-            <Feedback />
-
-          </ProtectedRoute>
-        }
-      />
-      <Route
-   path="/job-match"
-   element={
-      <ProtectedRoute>
-
-         <JobMatch />
-         
-      </ProtectedRoute>
-           }
-      />
-      <Route
-        path="/applications"
-        element={
-          <ProtectedRoute>
-            <Applications />
-          </ProtectedRoute>
-        }
-      />
-      
-      </Routes>
-
-    </BrowserRouter>
+    <Routes>
+      {AuthRoutes()}
+      {CandidateRoutes()}
+      {RecruiterRoutes()}
+      <Route path={ROUTES.ROOT} element={<RootRedirect />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   )
+}
+
+function RootRedirect() {
+  const { user, loading } = useContext(AuthContext)
+
+  if (loading) {
+    return null
+  }
+
+  if (user?.role) {
+    return <Navigate to={getDashboardRoute(user.role)} replace />
+  }
+
+  return <Navigate to={ROUTES.LOGIN} replace />
 }
 
 export default App

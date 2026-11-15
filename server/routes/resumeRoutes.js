@@ -2,6 +2,7 @@ const express = require('express')
 
 const Resume = require('../models/Resume')
 const authMiddleware = require('../middleware/authMiddleware')
+const { requireRole } = require('../middleware/roleMiddleware')
 
 const router = express.Router()
 
@@ -10,6 +11,7 @@ router.get(
     '/all',
 
     authMiddleware,
+    requireRole('candidate'),
 
     async (req, res) => {
 

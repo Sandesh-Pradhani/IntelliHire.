@@ -1,0 +1,27 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+  ai-engine:
+    build: ./ai-engine
+    restart: unless-stopped
+    ports: ["8000:8000"]
+  server:
+    build: ./server
+    restart: unless-stopped
+    depends_on: [mongo, ai-engine]
+    environment:
+      MONGO_URI: mongodb://mongo:27017/intellihire
+      AI_ENGINE_URL: http://ai-engine:8000
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET before starting Compose}
+      CLIENT_URL: http://localhost:5173
+    ports: ["5000:5000"]
+  client:
+    build: ./client
+    restart: unless-stopped
+    depends_on: [server]
+    ports: ["5173:80"]
+volumes:
+  mongo_data:
