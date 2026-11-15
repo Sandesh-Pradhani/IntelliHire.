@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
+    LLM_BASE_URL: str = "http://127.0.0.1:8080"
+
     # CORS - Allow all origins since this is an internal service
     # called by the Node.js backend proxy
     CORS_ORIGINS: list[str] = ["*"]
@@ -39,6 +41,11 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        # .env also carries non-Settings keys (SBERT_MODEL_PATH,
+        # HF_HUB_OFFLINE, ...) consumed directly via os.environ by
+        # services.sbert_embeddings; without ignore=True the engine refuses
+        # to start once those keys exist.
+        extra = "ignore"
 
 
 settings = Settings()
