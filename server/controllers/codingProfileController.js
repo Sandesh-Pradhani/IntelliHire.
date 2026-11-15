@@ -136,7 +136,14 @@ async function refreshProfile(req, res) {
     const results = await Promise.allSettled([
       profile.githubUsername ? githubService.fetchGitHubProfile(profile.githubUsername) : Promise.resolve(null),
       profile.leetcodeUsername ? leetcodeService.fetchLeetCodeProfile(profile.leetcodeUsername) : Promise.resolve(null),
-      profile.hackerrankUsername ? hackerrankService.fetchHackerRankProfile(profile.hackerrankUsername) : Promise.resolve(null),
+      profile.hackerrankUsername
+        ? hackerrankService.fetchHackerRankProfile(profile.hackerrankUsername, {
+            // Pass the stored snapshot so a temporary fetch failure preserves
+            // prior successful data instead of fabricating zeros, and so a
+            // successful verification clears stale error fields.
+            previousData: profile.hackerrankData || null,
+          })
+        : Promise.resolve(null),
     ])
 
     const [githubResult, leetcodeResult, hackerrankResult] = results
